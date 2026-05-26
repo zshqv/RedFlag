@@ -10,6 +10,8 @@
 #   2. FINANCIAL  — debt, liquidity, going concern warnings
 #   3. OPERATIONAL — supply chain, key person, technology risks
 #   4. REGULATORY  — compliance, government scrutiny, policy risk
+#
+# v2 — Expanded from 100 to 160 keywords across all 4 categories
 # =============================================================================
 
 
@@ -43,6 +45,22 @@ LEGAL_KEYWORDS = [
     "fine and penalty",
     "legal dispute",
     "court order",
+    # v2 additions
+    "derivative action",
+    "qui tam",
+    "patent infringement",
+    "trade secret misappropriation",
+    "breach of fiduciary duty",
+    "shareholder lawsuit",
+    "DOJ investigation",
+    "FTC action",
+    "consent decree",
+    "plea agreement",
+    "contempt of court",
+    "unfair competition",
+    "defamation claim",
+    "product liability",
+    "contractual dispute",
 ]
 
 
@@ -81,6 +99,22 @@ FINANCIAL_KEYWORDS = [
     "auditor doubt",
     "financial restatement",
     "earnings miss",
+    # v2 additions
+    "covenant violation",
+    "debt acceleration",
+    "cash burn",
+    "runway concern",
+    "deferred revenue risk",
+    "pension obligation",
+    "underfunded liability",
+    "contingent liability",
+    "off-balance sheet",
+    "credit downgrade",
+    "interest coverage ratio",
+    "leverage ratio",
+    "accounts receivable risk",
+    "inventory write-down",
+    "foreign exchange risk",
 ]
 
 
@@ -114,6 +148,22 @@ OPERATIONAL_KEYWORDS = [
     "platform dependency",
     "customer concentration",
     "geographic concentration",
+    # v2 additions
+    "key man risk",
+    "founder dependency",
+    "vendor lock-in",
+    "third party dependency",
+    "outsourcing risk",
+    "cloud dependency",
+    "algorithm change",
+    "platform risk",
+    "channel concentration",
+    "distribution disruption",
+    "raw material shortage",
+    "energy cost exposure",
+    "logistics failure",
+    "reputational damage",
+    "employee misconduct",
 ]
 
 
@@ -147,6 +197,22 @@ REGULATORY_KEYWORDS = [
     "FCPA violation",
     "tax reform",
     "regulatory burden",
+    # v2 additions
+    "regulatory overhang",
+    "pending rulemaking",
+    "Basel III",
+    "Dodd-Frank",
+    "SOX compliance",
+    "AML violation",
+    "KYC failure",
+    "money laundering",
+    "tax authority investigation",
+    "customs violation",
+    "healthcare regulation",
+    "price control",
+    "rate regulation",
+    "spectrum license",
+    "carbon regulation",
 ]
 
 
@@ -155,10 +221,10 @@ REGULATORY_KEYWORDS = [
 # Combines all 4 categories into one unified object that other modules import
 # -----------------------------------------------------------------------------
 REDFLAG_KEYWORDS = {
-    "Legal":      LEGAL_KEYWORDS,
-    "Financial":  FINANCIAL_KEYWORDS,
+    "Legal":       LEGAL_KEYWORDS,
+    "Financial":   FINANCIAL_KEYWORDS,
     "Operational": OPERATIONAL_KEYWORDS,
-    "Regulatory": REGULATORY_KEYWORDS,
+    "Regulatory":  REGULATORY_KEYWORDS,
 }
 
 
@@ -187,4 +253,3 @@ if __name__ == "__main__":
     for category, count in summary.items():
         print(f"  {category}: {count} keywords")
     print(f"\n  Total: {sum(summary.values())} keywords across 4 categories")
-    
