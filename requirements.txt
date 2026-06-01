@@ -14,3 +14,4 @@ weasyprint>=61.0
 xhtml2pdf>=0.2.17
 jinja2>=3.1.2
 pdfplumber>=0.10.3
+python-pptx>=1.0.2
