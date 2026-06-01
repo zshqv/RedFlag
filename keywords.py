@@ -1,24 +1,16 @@
 # =============================================================================
 # keywords.py — RedFlag Risk Keyword Library
 # =============================================================================
-# This file is the foundation of RedFlag. It contains a curated dictionary of
-# risk-signal words and phrases organized into 4 categories. Every other module
-# in RedFlag references this file when scanning SEC filings.
-#
 # Categories:
 #   1. LEGAL      — litigation, investigations, regulatory actions
 #   2. FINANCIAL  — debt, liquidity, going concern warnings
 #   3. OPERATIONAL — supply chain, key person, technology risks
 #   4. REGULATORY  — compliance, government scrutiny, policy risk
 #
-# v2 — Expanded from 100 to 160 keywords across all 4 categories
+# v3 — Added INDUSTRY_PACKS + sector detection helpers
 # =============================================================================
 
 
-# -----------------------------------------------------------------------------
-# LEGAL RISK KEYWORDS
-# Phrases that signal the company is facing or anticipating legal trouble
-# -----------------------------------------------------------------------------
 LEGAL_KEYWORDS = [
     "litigation",
     "lawsuit",
@@ -45,7 +37,6 @@ LEGAL_KEYWORDS = [
     "fine and penalty",
     "legal dispute",
     "court order",
-    # v2 additions
     "derivative action",
     "qui tam",
     "patent infringement",
@@ -64,10 +55,6 @@ LEGAL_KEYWORDS = [
 ]
 
 
-# -----------------------------------------------------------------------------
-# FINANCIAL RISK KEYWORDS
-# Phrases that signal stress in the company's financial health
-# -----------------------------------------------------------------------------
 FINANCIAL_KEYWORDS = [
     "going concern",
     "substantial doubt",
@@ -99,7 +86,6 @@ FINANCIAL_KEYWORDS = [
     "auditor doubt",
     "financial restatement",
     "earnings miss",
-    # v2 additions
     "covenant violation",
     "debt acceleration",
     "cash burn",
@@ -118,10 +104,6 @@ FINANCIAL_KEYWORDS = [
 ]
 
 
-# -----------------------------------------------------------------------------
-# OPERATIONAL RISK KEYWORDS
-# Phrases that signal problems in how the company runs its business
-# -----------------------------------------------------------------------------
 OPERATIONAL_KEYWORDS = [
     "supply chain disruption",
     "key personnel",
@@ -148,7 +130,6 @@ OPERATIONAL_KEYWORDS = [
     "platform dependency",
     "customer concentration",
     "geographic concentration",
-    # v2 additions
     "key man risk",
     "founder dependency",
     "vendor lock-in",
@@ -167,10 +148,6 @@ OPERATIONAL_KEYWORDS = [
 ]
 
 
-# -----------------------------------------------------------------------------
-# REGULATORY RISK KEYWORDS
-# Phrases that signal exposure to government rules, policy, or compliance issues
-# -----------------------------------------------------------------------------
 REGULATORY_KEYWORDS = [
     "regulatory change",
     "compliance failure",
@@ -197,7 +174,6 @@ REGULATORY_KEYWORDS = [
     "FCPA violation",
     "tax reform",
     "regulatory burden",
-    # v2 additions
     "regulatory overhang",
     "pending rulemaking",
     "Basel III",
@@ -216,10 +192,6 @@ REGULATORY_KEYWORDS = [
 ]
 
 
-# -----------------------------------------------------------------------------
-# MASTER KEYWORD DICTIONARY
-# Combines all 4 categories into one unified object that other modules import
-# -----------------------------------------------------------------------------
 REDFLAG_KEYWORDS = {
     "Legal":       LEGAL_KEYWORDS,
     "Financial":   FINANCIAL_KEYWORDS,
@@ -228,28 +200,148 @@ REDFLAG_KEYWORDS = {
 }
 
 
-# -----------------------------------------------------------------------------
-# KEYWORD METADATA
-# Useful for reporting — tells us how many keywords exist per category
-# -----------------------------------------------------------------------------
+# =============================================================================
+# INDUSTRY PACKS — sector-specific keyword additions
+# =============================================================================
+INDUSTRY_PACKS = {
+    "Banking": [
+        "net interest margin",
+        "tier 1 capital",
+        "tier 2 capital",
+        "basel",
+        "deposit outflow",
+        "credit loss provision",
+        "loan impairment",
+        "non-performing loan",
+        "allowance for credit losses",
+        "bank run",
+        "capital adequacy",
+        "stress test",
+        "interest rate sensitivity",
+        "mortgage default",
+        "liquidity coverage ratio",
+    ],
+    "Technology": [
+        "supply chain",
+        "semiconductor",
+        "data privacy",
+        "cloud outage",
+        "ip theft",
+        "export control",
+        "chip shortage",
+        "hardware dependency",
+        "open source risk",
+        "software vulnerability",
+        "API deprecation",
+        "platform ban",
+        "data localization",
+        "AI regulation",
+        "model bias",
+    ],
+    "Healthcare": [
+        "clinical trial",
+        "FDA approval",
+        "patent expiry",
+        "drug recall",
+        "liability",
+        "reimbursement",
+        "biosimilar competition",
+        "off-label use",
+        "adverse event",
+        "post-market surveillance",
+        "Medicare reimbursement",
+        "formulary exclusion",
+        "pricing pressure",
+        "generic competition",
+        "regulatory hold",
+    ],
+    "Energy": [
+        "oil spill",
+        "carbon tax",
+        "stranded asset",
+        "pipeline",
+        "refinery",
+        "commodity price",
+        "reserve depletion",
+        "decommissioning liability",
+        "flaring violation",
+        "methane regulation",
+        "energy transition risk",
+        "renewable mandate",
+        "drilling moratorium",
+        "LNG market",
+        "crude price volatility",
+    ],
+}
+
+
+def get_keywords_for_sector(sector):
+    """
+    Returns REDFLAG_KEYWORDS merged with the relevant sector pack.
+    The sector pack keywords are added under a key matching the sector name.
+    """
+    merged = {k: list(v) for k, v in REDFLAG_KEYWORDS.items()}
+    pack = INDUSTRY_PACKS.get(sector, [])
+    if pack:
+        merged[sector] = pack
+    return merged
+
+
+def detect_sector(company_name):
+    """
+    Uses simple keyword matching on the company name to guess the sector.
+    Returns one of: 'Banking', 'Technology', 'Healthcare', 'Energy', or None.
+    """
+    name_lower = company_name.lower()
+
+    banking_signals = [
+        "bank", "bancorp", "financial", "trust", "credit union",
+        "savings", "capital", "securities", "investment", "asset management",
+        "jpmorgan", "citigroup", "wells fargo", "goldman", "morgan stanley",
+    ]
+    tech_signals = [
+        "tech", "software", "systems", "data", "digital", "semiconductor",
+        "micro", "intel", "google", "apple", "microsoft", "meta", "amazon",
+        "cloud", "cyber", "ai", "computing", "networks", "information",
+    ]
+    healthcare_signals = [
+        "health", "pharma", "pharmaceutical", "medical", "bio", "therapeutics",
+        "hospital", "clinic", "life sciences", "genomics", "oncology", "surgery",
+    ]
+    energy_signals = [
+        "energy", "oil", "gas", "petroleum", "power", "electric", "nuclear",
+        "solar", "wind", "coal", "mining", "refining", "pipeline", "utilities",
+    ]
+
+    for signal in banking_signals:
+        if signal in name_lower:
+            return "Banking"
+    for signal in tech_signals:
+        if signal in name_lower:
+            return "Technology"
+    for signal in healthcare_signals:
+        if signal in name_lower:
+            return "Healthcare"
+    for signal in energy_signals:
+        if signal in name_lower:
+            return "Energy"
+
+    return None
+
+
 def get_keyword_summary():
-    """
-    Returns a simple summary of how many keywords exist in each category.
-    Useful for debugging and for the report header.
-    """
     summary = {}
     for category, keywords in REDFLAG_KEYWORDS.items():
         summary[category] = len(keywords)
     return summary
 
 
-# -----------------------------------------------------------------------------
-# QUICK TEST — run this file directly to verify everything loaded correctly
-# python keywords.py
-# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     print("RedFlag Keyword Library — Loaded Successfully\n")
     summary = get_keyword_summary()
     for category, count in summary.items():
         print(f"  {category}: {count} keywords")
     print(f"\n  Total: {sum(summary.values())} keywords across 4 categories")
+    print(f"\n  Industry Packs: {', '.join(INDUSTRY_PACKS.keys())}")
+    detected = detect_sector("JPMorgan Chase Bank")
+    print(f"\n  Sector detection 'JPMorgan Chase Bank' → {detected}")

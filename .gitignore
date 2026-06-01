@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# RedFlag outputs
+output/
+*.pdf
+*.xlsx
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.env

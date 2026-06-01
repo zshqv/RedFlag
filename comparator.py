@@ -29,15 +29,15 @@ def interpret_trajectory(percent_change):
         str: Human-readable trajectory label
     """
     if percent_change >= 25:
-        return "⚠️  DETERIORATING"
+        return "DETERIORATING"
     elif percent_change >= 10:
-        return "📈  INCREASING"
+        return "INCREASING"
     elif percent_change <= -25:
-        return "✅  SIGNIFICANTLY IMPROVING"
+        return "SIGNIFICANTLY IMPROVING"
     elif percent_change <= -10:
-        return "📉  IMPROVING"
+        return "IMPROVING"
     else:
-        return "➡️  STABLE"
+        return "STABLE"
 
 
 # -----------------------------------------------------------------------------
