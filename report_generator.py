@@ -148,14 +148,14 @@ def write_summary_sheet(ws, ticker, analysis, comparison, latest_date, previous_
 def write_findings_sheet(ws, findings):
     ws.title = "All Findings"
 
-    col_widths = [18, 15, 22, 70, 15, 18, 10, 12, 15, 45, 45]
+    col_widths = [18, 15, 22, 70, 15, 18, 10, 12, 15, 12, 45, 45]
     for i, w in enumerate(col_widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
 
     headers = [
         "Section", "Category", "Keyword Triggered", "Flagged Sentence",
         "Sentiment Score", "Risk Level", "Para #", "Sentence #",
-        "Severity Score", "Context Before", "Context After"
+        "Severity Score", "Confidence Score", "Context Before", "Context After"
     ]
     for col, header in enumerate(headers, 1):
         style_header_cell(ws.cell(row=1, column=col), header)
@@ -172,24 +172,27 @@ def write_findings_sheet(ws, findings):
         ws.cell(row=row_num, column=7).value  = finding.get("para_num", 0)
         ws.cell(row=row_num, column=8).value  = finding.get("sentence_num", 0)
         ws.cell(row=row_num, column=9).value  = finding.get("severity_score", 0)
-        ws.cell(row=row_num, column=10).value = finding.get("context_before", "")
-        ws.cell(row=row_num, column=11).value = finding.get("context_after", "")
+        ws.cell(row=row_num, column=10).value = finding.get("confidence_score", 50)
+        ws.cell(row=row_num, column=11).value = finding.get("context_before", "")
+        ws.cell(row=row_num, column=12).value = finding.get("context_after", "")
 
         ws.cell(row=row_num, column=4).alignment  = Alignment(wrap_text=True)
-        ws.cell(row=row_num, column=10).alignment = Alignment(wrap_text=True)
         ws.cell(row=row_num, column=11).alignment = Alignment(wrap_text=True)
+        ws.cell(row=row_num, column=12).alignment = Alignment(wrap_text=True)
 
-        # Alternate row shading (columns other than risk level and severity)
+        # Alternate row shading (skip col 6=Risk Level, 9=Severity, 10=Confidence)
         if row_num % 2 == 0:
-            for col in [1, 2, 3, 4, 5, 7, 8, 10, 11]:
+            for col in [1, 2, 3, 4, 5, 7, 8, 11, 12]:
                 ws.cell(row=row_num, column=col).fill = PatternFill(
                     start_color="F5F5F5", end_color="F5F5F5", fill_type="solid"
                 )
 
     if len(findings) >= 1:
-        last_row = len(findings) + 1
+        last_row  = len(findings) + 1
         sev_range = f"I2:I{last_row}"
-        # Conditional formatting on Severity Score column (col I = 9)
+        con_range = f"J2:J{last_row}"
+
+        # Conditional formatting — Severity Score (col I = 9)
         ws.conditional_formatting.add(
             sev_range,
             CellIsRule(operator="greaterThanOrEqual", formula=["70"],
@@ -206,9 +209,26 @@ def write_findings_sheet(ws, findings):
                        fill=PatternFill(bgColor="90EE90"))
         )
 
+        # Conditional formatting — Confidence Score (col J = 10)
+        ws.conditional_formatting.add(
+            con_range,
+            CellIsRule(operator="greaterThanOrEqual", formula=["70"],
+                       fill=PatternFill(bgColor="90EE90"))
+        )
+        ws.conditional_formatting.add(
+            con_range,
+            CellIsRule(operator="between", formula=["40", "69"],
+                       fill=PatternFill(bgColor="FF8C00"))
+        )
+        ws.conditional_formatting.add(
+            con_range,
+            CellIsRule(operator="lessThan", formula=["40"],
+                       fill=PatternFill(bgColor="FF4444"))
+        )
+
     # Freeze top row and enable auto-filter
     ws.freeze_panes = "A2"
-    ws.auto_filter.ref = f"A1:K{max(len(findings) + 1, 1)}"
+    ws.auto_filter.ref = f"A1:L{max(len(findings) + 1, 1)}"
 
 
 # ─── Excel Sheet 3 — Year-Over-Year ───────────────────────────────────────────

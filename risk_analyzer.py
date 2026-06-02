@@ -6,6 +6,7 @@
 import re
 from textblob import TextBlob
 from keywords import REDFLAG_KEYWORDS
+from confidence_scorer import score_confidence
 
 
 # Category weights for severity scoring
@@ -121,6 +122,10 @@ def analyze_filings(sections):
 
     # Sort by severity score descending (highest severity first)
     all_findings.sort(key=lambda x: x["severity_score"], reverse=True)
+
+    # Add confidence score to every finding (uses full list for co-occurrence)
+    for finding in all_findings:
+        finding["confidence_score"] = score_confidence(finding, all_findings)
 
     print(f"\n[RedFlag] Total red flags found: {len(all_findings)}")
 

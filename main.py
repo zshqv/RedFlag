@@ -222,13 +222,30 @@ if __name__ == "__main__":
         print("  python main.py --compare JPM BAC GS WFC\n")
         sys.exit(1)
 
-    if sys.argv[1].strip().lower() == "--compare":
+    cmd = sys.argv[1].strip().lower()
+
+    if cmd == "--trend":
+        if len(sys.argv) < 3:
+            print("[RedFlag] ERROR: --trend requires a ticker.")
+            print("[RedFlag] Usage: python main.py --trend AAPL")
+            sys.exit(1)
+        ticker = sys.argv[2].strip().upper()
+        from trend_analyzer import analyze_trend
+        trend_data = analyze_trend(ticker)
+        print(trend_data)
+
+    elif cmd == "--watchlist":
+        from watchlist import run_watchlist_check
+        run_watchlist_check()
+
+    elif cmd == "--compare":
         tickers = [t.strip().upper() for t in sys.argv[2:] if t.strip()]
         if len(tickers) < 2:
             print("[RedFlag] ERROR: --compare requires at least 2 tickers.")
             print("[RedFlag] Usage: python main.py --compare JPM BAC GS")
             sys.exit(1)
         run_compare(tickers)
+
     else:
         ticker = sys.argv[1].strip().upper()
         run_redflag(ticker)
