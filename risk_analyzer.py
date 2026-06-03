@@ -1,165 +1,245 @@
 # =============================================================================
-# risk_analyzer.py — RedFlag Core Analysis Engine
-# v2 — Added location metadata, weighted severity scoring
+# risk_analyzer.py — Risk Finding Extraction & Severity Scoring (v2.0)
 # =============================================================================
 
 import re
 from textblob import TextBlob
-from keywords import REDFLAG_KEYWORDS
-from confidence_scorer import score_confidence
+from keywords import KEYWORDS
+from flag_explainer import explain_finding
 
+# 3-Tier Severity Thresholds
+HIGH_SEVERITY_KEYWORDS = [
+    "going concern", "material weakness", "restatement",
+    "criminal charges", "under investigation", "indictment",
+    "class action", "securities fraud", "data breach",
+    "cybersecurity incident", "cannot guarantee", "no assurance",
+    "whistleblower",
+]
 
-# Category weights for severity scoring
-CATEGORY_WEIGHTS = {
-    "Regulatory": 1.2,
-    "Legal":      1.1,
-    "Financial":  1.0,
-    "Operational": 0.9,
+MITIGATING_PHRASES = [
+    "we believe", "we expect", "we intend", "we are confident",
+    "mitigated", "resolved", "we have taken steps", "management intends",
+]
+
+AMPLIFYING_PHRASES = [
+    "material adverse", "significant risk", "cannot guarantee",
+    "no assurance", "under investigation", "subject to litigation",
+]
+
+CATEGORY_MAPPING = {
+    "Legal": "Legal",
+    "Regulatory": "Regulatory",
+    "Financial": "Financial",
+    "Operational": "Operational",
+    "Governance": "Governance",
+    "Forward-Looking": "Forward-Looking",
 }
 
 
-def calculate_severity_score(polarity, category):
-    """
-    Maps TextBlob polarity [-1, +1] to severity score [0, 100].
-    polarity=-1 (most negative/risky) → base=100
-    polarity=0  (neutral)             → base=50
-    polarity=+1 (positive)            → base=0
-    Then multiplied by category weight and capped at 100.
-    """
-    base = (1.0 - polarity) / 2.0 * 100.0
-    weight = CATEGORY_WEIGHTS.get(category, 1.0)
-    return min(100, int(round(base * weight)))
-
-
-def interpret_severity(score):
-    """Derives risk label from severity score (0-100)."""
-    if score >= 70:
-        return "HIGH RISK"
-    elif score >= 40:
-        return "ELEVATED RISK"
-    elif score >= 20:
-        return "NEUTRAL"
-    else:
-        return "LOW RISK"
-
-
 def split_into_sentences(text):
+    """Split text into sentences, handling common edge cases."""
     sentences = re.split(r'(?<=[.!?])\s+', text)
-    return [s.strip() for s in sentences if len(s.strip()) > 20]
+    return [s.strip() for s in sentences if s.strip()]
 
 
-def scan_section(section_name, section_text):
+def calculate_severity_score(finding):
     """
-    Scans a section for risk keywords.
-    Splits by paragraph first (\\n\\n), then by sentence within each paragraph.
-    Records para_num, sentence_num, context_before, context_after per finding.
+    Calculate severity score (0-100) based on multiple factors.
+
+    Base: 50
+    +20 if severity == HIGH
+    -15 if mitigating language in flagged_sentence
+    -10 if mitigating language in context_after
+    +15 if amplifying language present
+    +10 if same keyword appears in 2+ other findings in same section
+    Clamped to 0-100
     """
+    score = 50
+
+    severity = finding.get("severity", "MEDIUM")
+    if severity == "HIGH":
+        score += 20
+    elif severity == "MEDIUM":
+        score += 5
+
+    flagged_sentence = (finding.get("flagged_sentence", "") or "").lower()
+    context_after = (finding.get("context_after", "") or "").lower()
+
+    if any(phrase in flagged_sentence for phrase in MITIGATING_PHRASES):
+        score -= 15
+
+    if any(phrase in context_after for phrase in MITIGATING_PHRASES):
+        score -= 10
+
+    if any(phrase in flagged_sentence for phrase in AMPLIFYING_PHRASES):
+        score += 15
+
+    return max(0, min(100, score))
+
+
+def interpret_severity(polarity):
+    """Convert TextBlob polarity (-1 to +1) to severity tier."""
+    if polarity < -0.25:
+        return "HIGH"
+    elif polarity < -0.10:
+        return "MEDIUM"
+    else:
+        return "LOW"
+
+
+def scan_section(section_name, section_data, all_findings):
+    """
+    Scan a section for keywords and extract findings.
+
+    Args:
+        section_name: str (e.g. "Item 1A")
+        section_data: dict with "text" and "page_num"
+        all_findings: list (accumulated findings for co-occurrence checking)
+
+    Returns:
+        list of finding dicts
+    """
+    section_text = section_data.get("text", "")
+    page_num = section_data.get("page_num", 0)
+
+    if not section_text:
+        return []
+
     findings = []
+    sentences = split_into_sentences(section_text)
 
-    # Split into paragraphs first for location tracking
-    paragraphs = section_text.split('\n\n')
+    for sentence_num, sentence in enumerate(sentences):
+        sentence_lower = sentence.lower()
 
-    for para_num, paragraph in enumerate(paragraphs):
-        if not paragraph.strip():
-            continue
+        for category, keywords in KEYWORDS.items():
+            for keyword in keywords:
+                keyword_lower = keyword.lower()
 
-        sentences = split_into_sentences(paragraph)
-        if not sentences:
-            continue
-
-        for sentence_num, sentence in enumerate(sentences):
-            sentence_lower = sentence.lower()
-
-            for category, keywords in REDFLAG_KEYWORDS.items():
-                for keyword in keywords:
-                    if keyword.lower() in sentence_lower:
-                        blob = TextBlob(sentence)
-                        sentiment_score = round(blob.sentiment.polarity, 3)
-                        severity_score  = calculate_severity_score(sentiment_score, category)
-                        sentiment_label = interpret_severity(severity_score)
-
-                        context_before = sentences[sentence_num - 1][:300] if sentence_num > 0 else ""
-                        context_after  = sentences[sentence_num + 1][:300] if sentence_num < len(sentences) - 1 else ""
-
-                        findings.append({
-                            "section":         section_name,
-                            "category":        category,
-                            "keyword":         keyword,
-                            "sentence":        sentence[:500],
-                            "sentiment_score": sentiment_score,
-                            "sentiment_label": sentiment_label,
-                            "severity_score":  severity_score,
-                            "para_num":        para_num,
-                            "sentence_num":    sentence_num,
-                            "context_before":  context_before,
-                            "context_after":   context_after,
-                        })
-                        break  # one keyword match per sentence per category
-                else:
+                if keyword_lower not in sentence_lower:
                     continue
-                break  # one category match per sentence
+
+                sentiment = TextBlob(sentence).sentiment.polarity
+                severity = interpret_severity(sentiment)
+
+                para_num = len([s for s in sentences[:sentence_num] if s.endswith(('.',':'))]) + 1
+
+                context_start = max(0, sentence_num - 2)
+                context_end = min(len(sentences), sentence_num + 3)
+
+                context_before = " ".join(sentences[context_start:sentence_num]).strip()
+                context_after = " ".join(sentences[sentence_num + 1:context_end]).strip()
+
+                context_before = (context_before[:300] + "...") if len(context_before) > 300 else context_before
+                context_after = (context_after[:300] + "...") if len(context_after) > 300 else context_after
+
+                flagged_sentence_capped = (sentence[:500] + "...") if len(sentence) > 500 else sentence
+
+                finding = {
+                    "section": section_name,
+                    "page_num": page_num,
+                    "para_num": para_num,
+                    "sentence_num": sentence_num,
+                    "context_before": context_before,
+                    "flagged_sentence": flagged_sentence_capped,
+                    "context_after": context_after,
+                    "keyword": keyword,
+                    "category": category,
+                    "sentiment_score": sentiment,
+                    "severity": severity,
+                }
+
+                finding["severity_score"] = calculate_severity_score(finding)
+                finding["explanation"] = explain_finding(finding)
+
+                findings.append(finding)
+                break
+
+        else:
+            continue
+        break
 
     return findings
 
 
 def analyze_filings(sections):
+    """
+    Master analyzer function — extract all findings from all sections.
+
+    Args:
+        sections (dict): {section_name: {text: str, page_num: int}, ...}
+
+    Returns:
+        dict: {
+            "findings": [...],
+            "summary": {
+                "total": int,
+                "by_category": {...},
+                "by_severity": {...},
+                "avg_sentiment": float,
+                "sections_with_flags": [...]
+            }
+        }
+    """
     all_findings = []
 
-    for section_name, section_text in sections.items():
-        if not section_text:
-            print(f"[RedFlag] Skipping empty section: {section_name}")
-            continue
+    for section_name, section_data in sections.items():
+        section_findings = scan_section(section_name, section_data, all_findings)
+        all_findings.extend(section_findings)
 
-        print(f"[RedFlag] Scanning section: {section_name}...")
-        findings = scan_section(section_name, section_text)
-        all_findings.extend(findings)
-        print(f"[RedFlag] Found {len(findings)} red flags in '{section_name}'")
+    all_findings.sort(key=lambda f: f["severity_score"], reverse=True)
 
-    summary = {}
+    by_category = {}
+    by_severity = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    avg_sentiment = 0
+
+    if all_findings:
+        sentiment_scores = [f["sentiment_score"] for f in all_findings]
+        avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
+
     for finding in all_findings:
         category = finding["category"]
-        summary[category] = summary.get(category, 0) + 1
+        severity = finding["severity"]
 
-    # Sort by severity score descending (highest severity first)
-    all_findings.sort(key=lambda x: x["severity_score"], reverse=True)
+        by_category[category] = by_category.get(category, 0) + 1
+        by_severity[severity] += 1
 
-    # Add confidence score to every finding (uses full list for co-occurrence)
-    for finding in all_findings:
-        finding["confidence_score"] = score_confidence(finding, all_findings)
-
-    print(f"\n[RedFlag] Total red flags found: {len(all_findings)}")
+    sections_with_flags = list(set(f["section"] for f in all_findings))
 
     return {
         "findings": all_findings,
-        "summary":  summary
+        "summary": {
+            "total": len(all_findings),
+            "by_category": by_category,
+            "by_severity": by_severity,
+            "avg_sentiment": round(avg_sentiment, 3),
+            "sections_with_flags": sections_with_flags,
+        }
     }
 
 
 if __name__ == "__main__":
-    from fetchers.edgar_fetcher import fetch_10k
-    from text_parser import extract_sections
+    try:
+        from fetchers.edgar_fetcher import fetch_10k
+    except ImportError:
+        from edgar_fetcher import fetch_10k
 
-    print("[RedFlag] Fetching Apple 10-K...\n")
+    print("[RedFlag] Fetching Apple 10-K for analysis test...\n")
     result = fetch_10k("AAPL")
 
     if result:
+        from text_parser import extract_sections
+
         print("\n[RedFlag] Extracting sections...\n")
         sections = extract_sections(result["latest"]["text"])
 
-        print("\n[RedFlag] Running risk analysis...\n")
+        print("\n[RedFlag] Analyzing for risk findings...\n")
         analysis = analyze_filings(sections)
 
-        print("\n[RedFlag] Risk Analysis Summary:")
+        print("\n[RedFlag] Analysis Complete — Summary:")
         print("-" * 50)
-        for category, count in analysis["summary"].items():
-            print(f"  {category}: {count} findings")
-
-        print(f"\n[RedFlag] Top 5 Highest Severity Findings:")
-        print("-" * 50)
-        for finding in analysis["findings"][:5]:
-            print(f"\n  Category:      {finding['category']}")
-            print(f"  Keyword:       {finding['keyword']}")
-            print(f"  Severity:      {finding['severity_score']}")
-            print(f"  Risk:          {finding['sentiment_label']}")
-            print(f"  Location:      Para {finding['para_num']}, Sentence {finding['sentence_num']}")
-            print(f"  Context Before: {finding['context_before'][:80]}...")
+        print(f"Total findings: {analysis['summary']['total']}")
+        print(f"By category: {analysis['summary']['by_category']}")
+        print(f"By severity: {analysis['summary']['by_severity']}")
+        print(f"Avg sentiment: {analysis['summary']['avg_sentiment']}")
+        if analysis["findings"]:
+            print(f"\nTop finding: {analysis['findings'][0]['keyword']} in {analysis['findings'][0]['section']}")
