@@ -92,3 +92,6 @@ def _fetch_from_ir_search(company_name):
             except Exception:
                 continue
     raise Exception("No usable PDF found via Google search")
+
+
+fetch_sedar = fetch_filing
