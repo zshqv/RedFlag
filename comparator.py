@@ -160,11 +160,18 @@ def compare_sentiment_trends(current_findings, previous_findings):
     else:
         sentiment_trend = "Language tone is STABLE"
 
+    direction = "STABLE"
+    if sentiment_change < -0.05:
+        direction = "WORSENING"
+    elif sentiment_change > 0.05:
+        direction = "IMPROVING"
+
     return {
-        "current_avg_sentiment":  current_avg,
-        "previous_avg_sentiment": previous_avg,
+        "current": current_avg,
+        "previous": previous_avg,
         "sentiment_change":       sentiment_change,
         "sentiment_trend":        sentiment_trend,
+        "direction": direction,
     }
 
 
