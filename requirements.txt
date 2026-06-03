@@ -1,17 +1,12 @@
-# RedFlag — SEC Filing Risk Analyzer
-# Install all dependencies: pip install -r requirements.txt
-#
-# Note: WeasyPrint on Windows requires no extra system libraries as of v60+.
-# If you encounter GTK errors on older WeasyPrint, run:
-#   pip install weasyprint --upgrade
-
-requests>=2.31.0
-beautifulsoup4>=4.12.2
-lxml>=4.9.3
-textblob>=0.17.1
-openpyxl>=3.1.2
-weasyprint>=61.0
-xhtml2pdf>=0.2.17
-jinja2>=3.1.2
-pdfplumber>=0.10.3
-python-pptx>=1.0.2
+requests
+beautifulsoup4
+textblob
+openpyxl
+fpdf2
+pdfplumber
+python-pptx
+jinja2
+weasyprint
+anthropic
+lxml
+html5lib
