@@ -76,3 +76,6 @@ def _fetch_annual_report(company_name):
             continue
 
     raise Exception("Could not extract text from any found PDF")
+
+
+fetch_fca = fetch_filing
