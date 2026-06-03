@@ -98,3 +98,6 @@ def _fallback_google_search(company_name):
                 continue
 
     raise Exception("No PDF found via BSE or Google fallback")
+
+
+fetch_bse = fetch_filing
