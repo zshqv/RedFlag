@@ -7,6 +7,25 @@ from textblob import TextBlob
 from keywords import KEYWORDS
 from flag_explainer import explain_finding
 
+_SECTION_PRIORITY = {
+    "risk factor": 0,
+    "legal proceeding": 1,
+    "mda": 2,
+    "management": 2,
+    "discussion": 2,
+    "financial note": 3,
+    "financial statement": 3,
+}
+
+
+def _section_priority(section_name):
+    sn = section_name.lower().replace("&", "and")
+    for key, pri in _SECTION_PRIORITY.items():
+        if key in sn:
+            return pri
+    return 99
+
+
 HIGH_SEVERITY_KEYWORDS = [
     "going concern", "material weakness", "restatement",
     "criminal charges", "under investigation", "indictment",
@@ -94,52 +113,56 @@ def scan_section(section_name, section_data, all_findings):
         return []
 
     findings = []
-    sentences = split_into_sentences(section_text)
+    paragraphs = [p.strip() for p in section_text.split("\n\n") if p.strip()]
+    if not paragraphs:
+        paragraphs = [section_text]
 
-    for sentence_num, sentence in enumerate(sentences):
-        sentence_lower = sentence.lower()
+    global_sentence_num = 0
 
-        for category, keywords in KEYWORDS.items():
-            for keyword in keywords:
-                if keyword.lower() not in sentence_lower:
-                    continue
+    for para_num, paragraph in enumerate(paragraphs, start=1):
+        sentences = split_into_sentences(paragraph)
 
-                sentiment = TextBlob(sentence).sentiment.polarity
-                severity = interpret_severity(sentiment, keyword, sentence)
+        for local_idx, sentence in enumerate(sentences):
+            global_sentence_num += 1
+            sentence_lower = sentence.lower()
 
-                para_num = (
-                    len([s for s in sentences[:sentence_num] if s.endswith((".", ":"))]) + 1
-                )
+            for category, keywords in KEYWORDS.items():
+                for keyword in keywords:
+                    if keyword.lower() not in sentence_lower:
+                        continue
 
-                context_start = max(0, sentence_num - 2)
-                context_end = min(len(sentences), sentence_num + 3)
+                    sentiment = TextBlob(sentence).sentiment.polarity
+                    severity = interpret_severity(sentiment, keyword, sentence)
 
-                context_before = " ".join(sentences[context_start:sentence_num]).strip()
-                context_after = " ".join(sentences[sentence_num + 1:context_end]).strip()
+                    context_start = max(0, local_idx - 2)
+                    context_end = min(len(sentences), local_idx + 3)
 
-                context_before = (context_before[:300] + "...") if len(context_before) > 300 else context_before
-                context_after = (context_after[:300] + "...") if len(context_after) > 300 else context_after
-                flagged_capped = (sentence[:500] + "...") if len(sentence) > 500 else sentence
+                    context_before = " ".join(sentences[context_start:local_idx]).strip()
+                    context_after = " ".join(sentences[local_idx + 1:context_end]).strip()
 
-                finding = {
-                    "section": section_name,
-                    "page_num": page_num,
-                    "para_num": para_num,
-                    "sentence_num": sentence_num,
-                    "context_before": context_before,
-                    "flagged_sentence": flagged_capped,
-                    "context_after": context_after,
-                    "keyword": keyword,
-                    "category": category,
-                    "sentiment_score": sentiment,
-                    "severity": severity,
-                    "severity_score": 0,
-                    "explanation": "",
-                }
+                    context_before = (context_before[:300] + "...") if len(context_before) > 300 else context_before
+                    context_after = (context_after[:300] + "...") if len(context_after) > 300 else context_after
+                    flagged_capped = (sentence[:500] + "...") if len(sentence) > 500 else sentence
 
-                finding["explanation"] = explain_finding(finding)
-                findings.append(finding)
-                break  # one keyword per category per sentence
+                    finding = {
+                        "section": section_name,
+                        "page_num": page_num,
+                        "para_num": para_num,
+                        "sentence_num": global_sentence_num,
+                        "context_before": context_before,
+                        "flagged_sentence": flagged_capped,
+                        "context_after": context_after,
+                        "keyword": keyword,
+                        "category": category,
+                        "sentiment_score": sentiment,
+                        "severity": severity,
+                        "severity_score": 0,
+                        "explanation": "",
+                    }
+
+                    finding["explanation"] = explain_finding(finding)
+                    findings.append(finding)
+                    break  # one keyword per category per sentence
 
     # Post-process: apply co-occurrence +10 within this section
     for finding in findings:
@@ -171,6 +194,19 @@ def analyze_filings(sections):
         all_findings.extend(section_findings)
 
     all_findings.sort(key=lambda f: f["severity_score"], reverse=True)
+
+    # Deduplicate: for identical (flagged_sentence, keyword), keep highest-priority section
+    best = {}
+    for f in all_findings:
+        key = (f["flagged_sentence"], f["keyword"])
+        pri = _section_priority(f["section"])
+        if key not in best or pri < best[key][0]:
+            best[key] = (pri, f)
+    unique = [v for _, v in best.values()]
+    unique.sort(key=lambda f: f["severity_score"], reverse=True)
+    removed = len(all_findings) - len(unique)
+    print(f"[RedFlag] Removed {removed} duplicates. Unique findings: {len(unique)}")
+    all_findings = unique
 
     by_category = {}
     by_severity = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
