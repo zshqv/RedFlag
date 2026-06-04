@@ -335,6 +335,10 @@ def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_d
     try:
         from fpdf import FPDF
 
+        def _s(text):
+            """ASCII-safe string for FPDF2 (strips non-latin-1 chars)."""
+            return str(text).encode("latin-1", "replace").decode("latin-1")
+
         findings = analysis["findings"]
         summary  = analysis["summary"]
 
@@ -344,15 +348,15 @@ def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_d
 
         # Cover
         pdf.set_font("Helvetica", "B", 20)
-        pdf.cell(0, 10, f"{ticker}: RedFlag Risk Report", ln=True)
+        pdf.cell(0, 10, _s(f"{ticker}: RedFlag Risk Report"), ln=True)
         pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 7, f"Source: {exchange}  |  Filing: {latest_date}  |  Generated: {datetime.now().strftime('%Y-%m-%d')}", ln=True)
+        pdf.cell(0, 7, _s(f"Source: {exchange}  |  Filing: {latest_date}  |  Generated: {datetime.now().strftime('%Y-%m-%d')}"), ln=True)
         pdf.ln(4)
         pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 8, ctx["verdict_label"], ln=True)
+        pdf.cell(0, 8, _s(ctx["verdict_label"]), ln=True)
         pdf.set_font("Helvetica", "", 11)
-        pdf.multi_cell(0, 5, ctx["verdict_line1"])
-        pdf.multi_cell(0, 5, ctx["verdict_line2"])
+        pdf.multi_cell(0, 5, _s(ctx["verdict_line1"]))
+        pdf.multi_cell(0, 5, _s(ctx["verdict_line2"]))
         pdf.ln(3)
         pdf.set_font("Helvetica", "B", 12)
         pdf.cell(0, 7, "Finding Counts", ln=True)
@@ -368,8 +372,8 @@ def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_d
         pdf.cell(0, 8, "HIGH Severity Findings", ln=True)
         pdf.set_font("Helvetica", "", 9)
         for f in [x for x in findings if x["severity"] == "HIGH"]:
-            pdf.multi_cell(0, 4, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}")
-            pdf.multi_cell(0, 4, f"  -> {f['explanation'][:100]}")
+            pdf.multi_cell(0, 4, _s(f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}"))
+            pdf.multi_cell(0, 4, _s(f"  -> {f['explanation'][:100]}"))
             pdf.ln(1)
 
         pdf.add_page()
@@ -377,8 +381,8 @@ def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_d
         pdf.cell(0, 8, "MEDIUM Severity Findings", ln=True)
         pdf.set_font("Helvetica", "", 9)
         for f in [x for x in findings if x["severity"] == "MEDIUM"]:
-            pdf.multi_cell(0, 4, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}")
-            pdf.multi_cell(0, 4, f"  -> {f['explanation'][:100]}")
+            pdf.multi_cell(0, 4, _s(f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}"))
+            pdf.multi_cell(0, 4, _s(f"  -> {f['explanation'][:100]}"))
             pdf.ln(1)
 
         pdf.add_page()
@@ -386,7 +390,7 @@ def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_d
         pdf.cell(0, 8, "LOW Severity Findings", ln=True)
         pdf.set_font("Helvetica", "", 9)
         for f in [x for x in findings if x["severity"] == "LOW"]:
-            pdf.multi_cell(0, 4, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}")
+            pdf.multi_cell(0, 4, _s(f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}"))
             pdf.ln(1)
 
         # Methodology
