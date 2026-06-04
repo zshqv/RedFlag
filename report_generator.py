@@ -336,74 +336,49 @@ def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_d
         from fpdf import FPDF
 
         def _s(text):
-            """ASCII-safe string for FPDF2 (strips non-latin-1 chars)."""
             return str(text).encode("latin-1", "replace").decode("latin-1")
+
+        def _row(pdf, text, size=11, bold=False, h=6):
+            pdf.set_font("Helvetica", "B" if bold else "", size)
+            pdf.set_x(pdf.l_margin)
+            pdf.multi_cell(0, h, _s(text))
 
         findings = analysis["findings"]
         summary  = analysis["summary"]
-
-        pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        pdf.add_page()
-
-        # Cover
-        pdf.set_font("Helvetica", "B", 20)
-        pdf.cell(0, 10, _s(f"{ticker}: RedFlag Risk Report"), ln=True)
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 7, _s(f"Source: {exchange}  |  Filing: {latest_date}  |  Generated: {datetime.now().strftime('%Y-%m-%d')}"), ln=True)
-        pdf.ln(4)
-        pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 8, _s(ctx["verdict_label"]), ln=True)
-        pdf.set_font("Helvetica", "", 11)
-        pdf.multi_cell(0, 5, _s(ctx["verdict_line1"]))
-        pdf.multi_cell(0, 5, _s(ctx["verdict_line2"]))
-        pdf.ln(3)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 7, "Finding Counts", ln=True)
-        pdf.set_font("Helvetica", "", 11)
         hi = summary["by_severity"].get("HIGH", 0)
         me = summary["by_severity"].get("MEDIUM", 0)
         lo = summary["by_severity"].get("LOW", 0)
-        pdf.cell(0, 6, f"Total: {summary['total']}  |  HIGH: {hi}  |  MEDIUM: {me}  |  LOW: {lo}", ln=True)
 
-        # Findings (all)
+        pdf = FPDF()
+        pdf.set_margins(15, 15, 15)
+        pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "HIGH Severity Findings", ln=True)
-        pdf.set_font("Helvetica", "", 9)
-        for f in [x for x in findings if x["severity"] == "HIGH"]:
-            pdf.multi_cell(0, 4, _s(f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}"))
-            pdf.multi_cell(0, 4, _s(f"  -> {f['explanation'][:100]}"))
-            pdf.ln(1)
 
-        pdf.add_page()
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "MEDIUM Severity Findings", ln=True)
-        pdf.set_font("Helvetica", "", 9)
-        for f in [x for x in findings if x["severity"] == "MEDIUM"]:
-            pdf.multi_cell(0, 4, _s(f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}"))
-            pdf.multi_cell(0, 4, _s(f"  -> {f['explanation'][:100]}"))
-            pdf.ln(1)
-
-        pdf.add_page()
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "LOW Severity Findings", ln=True)
-        pdf.set_font("Helvetica", "", 9)
-        for f in [x for x in findings if x["severity"] == "LOW"]:
-            pdf.multi_cell(0, 4, _s(f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}"))
-            pdf.ln(1)
-
-        # Methodology
-        pdf.add_page()
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "Methodology", ln=True)
-        pdf.set_font("Helvetica", "", 10)
-        pdf.multi_cell(0, 5, "All 18 standard 10-K items scanned with 220+ risk keywords across 6 categories. "
-                              "Severity scored 0-100 based on sentiment, mitigating/amplifying language, "
-                              "and keyword co-occurrence within sections.")
+        _row(pdf, f"{ticker}: RedFlag Risk Report", size=20, bold=True, h=10)
+        _row(pdf, f"Source: {exchange}  |  Filing: {latest_date}  |  Generated: {datetime.now().strftime('%Y-%m-%d')}", size=10, h=6)
         pdf.ln(3)
-        pdf.set_font("Helvetica", "", 9)
-        pdf.cell(0, 5, "github.com/zshqv/RedFlag  |  Not financial advice.", ln=True)
+        _row(pdf, ctx["verdict_label"], size=14, bold=True, h=8)
+        _row(pdf, ctx["verdict_line1"], size=11, h=5)
+        _row(pdf, ctx["verdict_line2"], size=11, h=5)
+        pdf.ln(3)
+        _row(pdf, "Finding Counts", size=12, bold=True, h=7)
+        _row(pdf, f"Total: {summary['total']}  |  HIGH: {hi}  |  MEDIUM: {me}  |  LOW: {lo}", size=11, h=6)
+
+        for tier in ["HIGH", "MEDIUM", "LOW"]:
+            pdf.add_page()
+            _row(pdf, f"{tier} Severity Findings", size=13, bold=True, h=8)
+            for f in [x for x in findings if x["severity"] == tier]:
+                _row(pdf, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:150]}", size=9, h=4)
+                _row(pdf, f"  -> {f['explanation'][:120]}", size=8, h=3)
+                pdf.ln(1)
+
+        pdf.add_page()
+        _row(pdf, "Methodology", size=13, bold=True, h=8)
+        _row(pdf, ("All 18 standard 10-K items scanned with 220+ risk keywords across 6 categories. "
+                   "Severity scored 0-100 based on sentiment, mitigating/amplifying language, "
+                   "and keyword co-occurrence within sections."), size=10, h=5)
+        pdf.ln(3)
+        _row(pdf, "github.com/zshqv/RedFlag  |  Not financial advice.", size=9, h=5)
 
         pdf.output(filepath)
         print(f"[RedFlag] PDF saved (FPDF2 fallback): {filepath}")
