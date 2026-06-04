@@ -212,7 +212,10 @@ def compare_years(current_analysis, previous_analysis):
     overall_trajectory = interpret_trajectory(total_percent_change)
 
     # Run all three comparisons
-    category_comparison = compare_category_counts(current_summary, previous_summary)
+    category_comparison = compare_category_counts(
+        current_summary.get("by_category", {}),
+        previous_summary.get("by_category", {})
+    )
     new_keywords        = find_new_keywords(current_findings, previous_findings)
     sentiment_trend     = compare_sentiment_trends(current_findings, previous_findings)
 
