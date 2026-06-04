@@ -3,542 +3,700 @@
 # =============================================================================
 
 import os
-import warnings
 import re
+import warnings
 from datetime import datetime
+
+import jinja2
+import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from bs4 import XMLParsedAsHTMLWarning
 from pptx import Presentation
 from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
-import jinja2
+from pptx.enum.text import PP_ALIGN
+from pptx.chart.data import ChartData
+from pptx.enum.chart import XL_CHART_TYPE
+from bs4 import XMLParsedAsHTMLWarning
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 OUTPUT_DIR = "output"
 
-def ensure_output_dir():
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+# Brand colours
+NAVY  = RGBColor(0x1a, 0x1a, 0x2e)
+RED   = RGBColor(0xE2, 0x4B, 0x4A)
+AMBER = RGBColor(0xEF, 0x9F, 0x27)
+GREEN = RGBColor(0x3B, 0x6D, 0x11)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+GREY  = RGBColor(0xF5, 0xF5, 0xF5)
 
-def sanitize_text(text):
+
+def ensure_output_dir():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+def sanitize(text):
     if not isinstance(text, str):
         text = str(text)
     return text.encode("ascii", "replace").decode("ascii").replace("?", " ").strip()
 
+
+# ─────────────────────────────────────────────────────────────
+#  EXCEL
+# ─────────────────────────────────────────────────────────────
+
 def generate_excel(ticker, analysis, comparison, latest_date, previous_date):
-    """Generate 3-sheet Excel workbook."""
     ensure_output_dir()
+
     wb = Workbook()
-    ws = wb.active
-    ws.title = "Quick Brief"
-
     findings = analysis["findings"]
-    summary = analysis["summary"]
+    summary  = analysis["summary"]
 
-    header_fill = PatternFill(start_color="1a1a2e", end_color="1a1a2e", fill_type="solid")
-    header_font = Font(color="FFFFFF", bold=True, size=11)
+    high_count   = summary["by_severity"].get("HIGH", 0)
+    medium_count = summary["by_severity"].get("MEDIUM", 0)
+    low_count    = summary["by_severity"].get("LOW", 0)
+    total        = summary["total"]
+    new_kws      = comparison.get("new_keywords", [])
+    avg_sent     = summary.get("avg_sentiment", 0.0)
 
-    thin_border = Border(
-        left=Side(style='thin'),
-        right=Side(style='thin'),
-        top=Side(style='thin'),
-        bottom=Side(style='thin')
+    nav_fill  = PatternFill(start_color="1a1a2e", end_color="1a1a2e", fill_type="solid")
+    nav_font  = Font(color="FFFFFF", bold=True, size=10)
+    thin      = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"),  bottom=Side(style="thin"),
     )
 
-    row = 1
-    headers = ["Company", "Ticker", "Source", "Filing Date", "Verdict", "Total", "HIGH", "MEDIUM", "LOW"]
-    for col, header in enumerate(headers, start=1):
-        cell = ws.cell(row=row, column=col)
-        cell.value = header
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.border = thin_border
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+    def _hdr_cell(ws, row, col, value):
+        c = ws.cell(row=row, column=col, value=value)
+        c.fill = nav_fill; c.font = nav_font
+        c.border = thin
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        return c
 
-    ws.freeze_panes = "A6"
+    def _data_cell(ws, row, col, value, fill=None):
+        c = ws.cell(row=row, column=col, value=value)
+        c.border = thin
+        c.alignment = Alignment(wrap_text=True, vertical="top")
+        if fill:
+            c.fill = fill
+        return c
 
-    row = 2
-    high_count = summary["by_severity"].get("HIGH", 0)
-    medium_count = summary["by_severity"].get("MEDIUM", 0)
-    low_count = summary["by_severity"].get("LOW", 0)
+    # ── Sheet 1: Quick Brief ──────────────────────────────────
+    ws1 = wb.active
+    ws1.title = "Quick Brief"
 
-    ws.cell(row=row, column=1).value = ticker
-    ws.cell(row=row, column=2).value = ticker
-    ws.cell(row=row, column=3).value = comparison.get("exchange", "Unknown")
-    ws.cell(row=row, column=4).value = latest_date
-    ws.cell(row=row, column=5).value = "REVIEW REQUIRED" if high_count > 0 else "PASS"
-    ws.cell(row=row, column=6).value = summary["total"]
-    ws.cell(row=row, column=7).value = high_count
-    ws.cell(row=row, column=8).value = medium_count
-    ws.cell(row=row, column=9).value = low_count
+    # Rows 1-4: company info block
+    meta = [
+        ("Company / Ticker", ticker),
+        ("Exchange / Source", comparison.get("exchange", "Unknown")),
+        ("Filing Date", str(latest_date or "N/A")),
+        ("Previous Filing", str(previous_date or "N/A")),
+        ("Verdict",
+         "CRITICAL RISK" if high_count > 0 else
+         "ELEVATED RISK" if medium_count > 3 else "LOW RISK"),
+    ]
+    for r, (k, v) in enumerate(meta, start=1):
+        c1 = ws1.cell(row=r, column=1, value=k)
+        c1.font = Font(bold=True, color="FFFFFF"); c1.fill = nav_fill; c1.border = thin
+        c2 = ws1.cell(row=r, column=2, value=v)
+        c2.border = thin
 
-    row = 5
-    finding_headers = ["Section", "Page", "Para", "Sent", "Keyword", "Category", "Severity", "Flagged Sentence", "Explanation"]
-    for col, header in enumerate(finding_headers, start=1):
-        cell = ws.cell(row=row, column=col)
-        cell.value = header
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.border = thin_border
+    # Row 5: counts banner
+    count_labels = ["Total", "HIGH", "MEDIUM", "LOW", "New Keywords", "Avg Sentiment"]
+    count_values = [total, high_count, medium_count, low_count, len(new_kws), round(avg_sent, 3)]
+    for col, (lbl, val) in enumerate(zip(count_labels, count_values), start=1):
+        _hdr_cell(ws1, 5, col, lbl)
+        c = ws1.cell(row=6, column=col, value=val)
+        c.border = thin; c.alignment = Alignment(horizontal="center")
 
-    ws.auto_filter.ref = f"A{row}:{get_column_letter(len(finding_headers))}{row}"
+    ws1.freeze_panes = "A7"
 
-    sorted_findings = sorted(findings, key=lambda f: (
-        {"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(f["severity"], 3),
-        -f["severity_score"]
-    ))
+    # Row 7: finding table headers (12 columns per spec)
+    finding_cols = [
+        "Section", "Page", "Para", "Sent", "Keyword", "Category",
+        "Severity", "Flagged Sentence", "Context Before", "Context After",
+        "Explanation", "Sentiment Score",
+    ]
+    for col, hdr in enumerate(finding_cols, start=1):
+        _hdr_cell(ws1, 7, col, hdr)
 
-    for finding in sorted_findings:
-        row += 1
-        severity = finding["severity"]
-        if severity == "HIGH":
-            fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
-        elif severity == "MEDIUM":
-            fill = PatternFill(start_color="FFF3CC", end_color="FFF3CC", fill_type="solid")
-        else:
-            fill = PatternFill(start_color="E6FFE6", end_color="E6FFE6", fill_type="solid")
+    ws1.auto_filter.ref = f"A7:{get_column_letter(len(finding_cols))}7"
 
-        ws.cell(row=row, column=1).value = finding["section"]
-        ws.cell(row=row, column=2).value = finding["page_num"]
-        ws.cell(row=row, column=3).value = finding["para_num"]
-        ws.cell(row=row, column=4).value = finding["sentence_num"]
-        ws.cell(row=row, column=5).value = finding["keyword"]
-        ws.cell(row=row, column=6).value = finding["category"]
-        ws.cell(row=row, column=7).value = finding["severity"]
-        ws.cell(row=row, column=8).value = finding["flagged_sentence"][:100]
-        ws.cell(row=row, column=9).value = finding["explanation"][:100]
+    sorted_findings = sorted(
+        findings,
+        key=lambda f: ({"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(f["severity"], 3),
+                       -f["severity_score"])
+    )
 
-        for col in range(1, len(finding_headers) + 1):
-            ws.cell(row=row, column=col).fill = fill
-            ws.cell(row=row, column=col).border = thin_border
+    high_fill   = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+    medium_fill = PatternFill(start_color="FFF3CC", end_color="FFF3CC", fill_type="solid")
+    low_fill    = PatternFill(start_color="E6FFE6", end_color="E6FFE6", fill_type="solid")
 
-    for col in range(1, 10):
-        ws.column_dimensions[get_column_letter(col)].width = 15
+    data_row = 8
+    for f in sorted_findings:
+        sev = f["severity"]
+        fill = high_fill if sev == "HIGH" else medium_fill if sev == "MEDIUM" else low_fill
+        vals = [
+            f["section"], f["page_num"], f["para_num"], f["sentence_num"],
+            f["keyword"], f["category"], f["severity"],
+            f["flagged_sentence"], f["context_before"], f["context_after"],
+            f["explanation"], round(f["sentiment_score"], 3),
+        ]
+        for col, val in enumerate(vals, start=1):
+            _data_cell(ws1, data_row, col, val, fill)
+        data_row += 1
 
+    # Column widths
+    col_widths = [12, 6, 6, 6, 18, 14, 10, 60, 40, 40, 60, 10]
+    for col, w in enumerate(col_widths, start=1):
+        ws1.column_dimensions[get_column_letter(col)].width = w
+    ws1.row_dimensions[7].height = 28
+
+    # ── Sheet 2: Risk Dashboard ───────────────────────────────
     ws2 = wb.create_sheet("Risk Dashboard")
-    ws2.cell(row=1, column=1).value = "Total Findings"
-    ws2.cell(row=1, column=2).value = summary["total"]
-    ws2.cell(row=2, column=1).value = "HIGH"
-    ws2.cell(row=2, column=2).value = high_count
-    ws2.cell(row=3, column=1).value = "MEDIUM"
-    ws2.cell(row=3, column=2).value = medium_count
-    ws2.cell(row=4, column=1).value = "LOW"
-    ws2.cell(row=4, column=2).value = low_count
 
-    row = 6
-    ws2.cell(row=row, column=1).value = "Category"
-    ws2.cell(row=row, column=2).value = "Count"
-    for category, count in summary["by_category"].items():
-        row += 1
-        ws2.cell(row=row, column=1).value = category
-        ws2.cell(row=row, column=2).value = count
+    metrics = [
+        ("Total Findings", total),
+        ("HIGH", high_count),
+        ("MEDIUM", medium_count),
+        ("LOW", low_count),
+        ("New This Year", len(new_kws)),
+        ("Avg Sentiment", round(avg_sent, 3)),
+    ]
+    for col, (lbl, val) in enumerate(metrics, start=1):
+        _hdr_cell(ws2, 1, col, lbl)
+        c = ws2.cell(row=2, column=col, value=val)
+        c.border = thin; c.alignment = Alignment(horizontal="center")
+        ws2.column_dimensions[get_column_letter(col)].width = 16
 
+    # Category breakdown with YoY delta
+    by_cat = comparison.get("by_category", {})
+    for col, hdr in enumerate(["Category", "This Year", "Prior Year", "Delta", "Trajectory"], start=1):
+        _hdr_cell(ws2, 4, col, hdr)
+    r = 5
+    for cat, cd in by_cat.items():
+        ws2.cell(row=r, column=1, value=cat).border = thin
+        ws2.cell(row=r, column=2, value=cd.get("current_count", 0)).border = thin
+        ws2.cell(row=r, column=3, value=cd.get("previous_count", 0)).border = thin
+        delta = cd.get("change", 0)
+        dc = ws2.cell(row=r, column=4, value=f"+{delta}" if delta > 0 else str(delta))
+        dc.border = thin
+        ws2.cell(row=r, column=5, value=cd.get("trajectory", "")).border = thin
+        r += 1
+
+    # New keywords table
+    r += 2
+    _hdr_cell(ws2, r, 1, "New Keyword"); _hdr_cell(ws2, r, 2, "Category")
+    r += 1
+    kw_to_cat = {f["keyword"]: f["category"] for f in findings}
+    for kw in new_kws:
+        ws2.cell(row=r, column=1, value=kw).border = thin
+        ws2.cell(row=r, column=2, value=kw_to_cat.get(kw, "")).border = thin
+        r += 1
+
+    # ── Sheet 3: YoY Comparison ───────────────────────────────
     ws3 = wb.create_sheet("YoY Comparison")
-    ws3.cell(row=1, column=1).value = "Year-over-Year Comparison"
-    ws3.cell(row=2, column=1).value = "Category"
-    ws3.cell(row=2, column=2).value = "Prior Year"
-    ws3.cell(row=2, column=3).value = "This Year"
-    ws3.cell(row=2, column=4).value = "Delta"
 
-    if comparison.get("by_category"):
-        row = 3
-        for cat_name, cat_data in comparison["by_category"].items():
-            ws3.cell(row=row, column=1).value = cat_name
-            ws3.cell(row=row, column=2).value = cat_data.get("previous_count", 0)
-            ws3.cell(row=row, column=3).value = cat_data.get("current_count", 0)
-            ws3.cell(row=row, column=4).value = cat_data.get("change", 0)
-            row += 1
+    overall = comparison.get("overall", {})
+    ws3.cell(row=1, column=1, value="Year-Over-Year Risk Comparison").font = Font(bold=True, size=12)
+    traj = overall.get("trajectory", "N/A")
+    ws3.cell(row=2, column=1, value=f"Trajectory: {traj}").font = Font(bold=True)
+
+    for col, hdr in enumerate(["Category", "Prior Year", "This Year", "Delta", "Trajectory"], start=1):
+        _hdr_cell(ws3, 4, col, hdr)
+    r = 5
+    for cat, cd in by_cat.items():
+        delta = cd.get("change", 0)
+        for col, val in enumerate(
+            [cat, cd.get("previous_count", 0), cd.get("current_count", 0),
+             f"+{delta}" if delta > 0 else str(delta), cd.get("trajectory", "")],
+            start=1
+        ):
+            ws3.cell(row=r, column=col, value=val).border = thin
+        r += 1
+
+    # New keywords
+    r += 2
+    _hdr_cell(ws3, r, 1, "New Keywords This Year")
+    r += 1
+    for kw in new_kws:
+        ws3.cell(row=r, column=1, value=kw).border = thin; r += 1
+
+    # Resolved keywords (appeared in prior but not current)
+    current_kws = {f["keyword"] for f in findings}
+    resolved = sorted(comparison.get("new_keywords_previous", []))
+    if not resolved and comparison.get("by_category"):
+        pass  # resolved list not always computed — leave empty
+
+    r += 1
+    _hdr_cell(ws3, r, 1, "Sentiment Trend")
+    r += 1
+    st = comparison.get("sentiment_trend", {})
+    ws3.cell(row=r, column=1, value=f"Direction: {st.get('direction','N/A')}").font = Font(bold=True)
+    r += 1
+    ws3.cell(row=r, column=1, value=f"Prior Year: {st.get('previous', 0):.3f}  |  This Year: {st.get('current', 0):.3f}")
+
+    for col in range(1, 6):
+        ws3.column_dimensions[get_column_letter(col)].width = 20
 
     filepath = os.path.join(OUTPUT_DIR, f"{ticker}_redflag.xlsx")
     wb.save(filepath)
+    print(f"[RedFlag] Excel saved: {filepath}")
     return filepath
 
-def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_date):
-    """Generate PDF report using simple FPDF2."""
-    ensure_output_dir()
 
+# ─────────────────────────────────────────────────────────────
+#  PDF  (WeasyPrint + Jinja2 → FPDF2 fallback)
+# ─────────────────────────────────────────────────────────────
+
+def _build_pdf_context(ticker, analysis, comparison, latest_date, exchange, previous_date):
     findings = analysis["findings"]
-    summary = analysis["summary"]
-
-    high_count = summary["by_severity"].get("HIGH", 0)
+    summary  = analysis["summary"]
+    high_count   = summary["by_severity"].get("HIGH", 0)
     medium_count = summary["by_severity"].get("MEDIUM", 0)
-    low_count = summary["by_severity"].get("LOW", 0)
-    total = summary["total"]
-
-    if total > 0:
-        avg_severity = round(sum(f.get("severity_score", 50) for f in findings) / total)
-    else:
-        avg_severity = 0
+    low_count    = summary["by_severity"].get("LOW", 0)
+    total        = summary["total"]
 
     if high_count > 0:
-        verdict_line = f"CRITICAL: {high_count} HIGH-severity flags require immediate review."
+        verdict_label = "CRITICAL RISK"
+        verdict_class = "verdict-red"
+        verdict_line1 = f"{high_count} HIGH-severity flag(s) detected — immediate review required."
+        verdict_line2 = "Do not proceed without resolving these items in due diligence."
     elif medium_count > 3:
-        verdict_line = f"ELEVATED RISK: {medium_count} MEDIUM flags detected. Detailed review recommended."
+        verdict_label = "ELEVATED RISK"
+        verdict_class = "verdict-amber"
+        verdict_line1 = f"{medium_count} MEDIUM-severity flags detected — detailed review recommended."
+        verdict_line2 = "Each flag should be traced to source documents and management commentary."
     else:
-        verdict_line = f"LOW RISK: Minimal findings ({low_count} low-severity). Standard due diligence sufficient."
+        verdict_label = "LOW RISK"
+        verdict_class = "verdict-green"
+        verdict_line1 = f"Minimal findings ({total} total). Standard due diligence sufficient."
+        verdict_line2 = "No high-priority items requiring escalation at this time."
 
+    avg_sev = 0
+    if total > 0:
+        avg_sev = round(sum(f.get("severity_score", 50) for f in findings) / total)
+
+    overall = comparison.get("overall", {})
+
+    return {
+        "ticker":          ticker,
+        "exchange":        exchange,
+        "filing_date":     str(latest_date or "N/A"),
+        "previous_date":   str(previous_date or "N/A"),
+        "generated_date":  datetime.now().strftime("%Y-%m-%d"),
+        "verdict_label":   verdict_label,
+        "verdict_class":   verdict_class,
+        "verdict_line1":   verdict_line1,
+        "verdict_line2":   verdict_line2,
+        "total_findings":  total,
+        "high_count":      high_count,
+        "medium_count":    medium_count,
+        "low_count":       low_count,
+        "avg_severity":    avg_sev,
+        "avg_sentiment":   summary.get("avg_sentiment", 0.0),
+        "sections_scanned": summary.get("sections_with_flags", []),
+        "high_findings":   [f for f in findings if f["severity"] == "HIGH"],
+        "medium_findings": [f for f in findings if f["severity"] == "MEDIUM"],
+        "low_findings":    [f for f in findings if f["severity"] == "LOW"],
+        "has_previous":    bool(previous_date),
+        "category_grid":   comparison.get("by_category", {}),
+        "new_keywords":    comparison.get("new_keywords", []),
+        "sentiment_trend": comparison.get("sentiment_trend", {}),
+        "overall":         overall,
+    }
+
+
+def generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_date):
+    ensure_output_dir()
+    filepath = os.path.join(OUTPUT_DIR, f"{ticker}_redflag.pdf")
+    ctx = _build_pdf_context(ticker, analysis, comparison, latest_date, exchange, previous_date)
+
+    # ── Try WeasyPrint ────────────────────────────────────────
+    try:
+        from weasyprint import HTML as WP_HTML
+
+        template_dir = os.path.dirname(os.path.abspath(__file__))
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_dir),
+            autoescape=False,
+        )
+        html_str = env.get_template("pdf_template.html").render(**ctx)
+        WP_HTML(string=html_str, base_url=template_dir).write_pdf(filepath)
+        print(f"[RedFlag] PDF saved (WeasyPrint): {filepath}")
+        return filepath
+
+    except Exception as wp_err:
+        print(f"[RedFlag] WeasyPrint unavailable ({wp_err}). Falling back to FPDF2.")
+
+    # ── FPDF2 fallback ────────────────────────────────────────
     try:
         from fpdf import FPDF
 
+        findings = analysis["findings"]
+        summary  = analysis["summary"]
+
         pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
+
+        # Cover
         pdf.set_font("Helvetica", "B", 20)
         pdf.cell(0, 10, f"{ticker}: RedFlag Risk Report", ln=True)
-
         pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 8, f"Exchange: {exchange} | Filing Date: {latest_date}", ln=True)
-        pdf.cell(0, 8, f"Report Generated: {datetime.now().strftime('%Y-%m-%d')}", ln=True)
-
-        pdf.ln(5)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 8, "Verdict", ln=True)
+        pdf.cell(0, 7, f"Source: {exchange}  |  Filing: {latest_date}  |  Generated: {datetime.now().strftime('%Y-%m-%d')}", ln=True)
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(0, 8, ctx["verdict_label"], ln=True)
         pdf.set_font("Helvetica", "", 11)
-        pdf.multi_cell(0, 5, verdict_line)
-
-        pdf.ln(5)
+        pdf.multi_cell(0, 5, ctx["verdict_line1"])
+        pdf.multi_cell(0, 5, ctx["verdict_line2"])
+        pdf.ln(3)
         pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 8, "Finding Counts", ln=True)
+        pdf.cell(0, 7, "Finding Counts", ln=True)
         pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 6, f"Total: {total} | HIGH: {high_count} | MEDIUM: {medium_count} | LOW: {low_count}", ln=True)
+        hi = summary["by_severity"].get("HIGH", 0)
+        me = summary["by_severity"].get("MEDIUM", 0)
+        lo = summary["by_severity"].get("LOW", 0)
+        pdf.cell(0, 6, f"Total: {summary['total']}  |  HIGH: {hi}  |  MEDIUM: {me}  |  LOW: {lo}", ln=True)
 
-        pdf.ln(5)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 8, "Top Findings", ln=True)
-        pdf.set_font("Helvetica", "", 10)
+        # Findings (all)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.cell(0, 8, "HIGH Severity Findings", ln=True)
+        pdf.set_font("Helvetica", "", 9)
+        for f in [x for x in findings if x["severity"] == "HIGH"]:
+            pdf.multi_cell(0, 4, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}")
+            pdf.multi_cell(0, 4, f"  -> {f['explanation'][:100]}")
+            pdf.ln(1)
 
-        for idx, f in enumerate(findings[:10]):
-            pdf.multi_cell(0, 4, f"{idx+1}. {f['keyword']} ({f['section']}, page {f['page_num']}) — {f['explanation'][:80]}")
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.cell(0, 8, "MEDIUM Severity Findings", ln=True)
+        pdf.set_font("Helvetica", "", 9)
+        for f in [x for x in findings if x["severity"] == "MEDIUM"]:
+            pdf.multi_cell(0, 4, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}")
+            pdf.multi_cell(0, 4, f"  -> {f['explanation'][:100]}")
+            pdf.ln(1)
 
-        pdf.ln(5)
-        pdf.set_font("Helvetica", "B", 12)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.cell(0, 8, "LOW Severity Findings", ln=True)
+        pdf.set_font("Helvetica", "", 9)
+        for f in [x for x in findings if x["severity"] == "LOW"]:
+            pdf.multi_cell(0, 4, f"[{f['section']} p.{f['page_num']}] {f['keyword']}: {f['flagged_sentence'][:120]}")
+            pdf.ln(1)
+
+        # Methodology
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 13)
         pdf.cell(0, 8, "Methodology", ln=True)
         pdf.set_font("Helvetica", "", 10)
-        pdf.multi_cell(0, 4, "This report analyzes all 18 10-K sections using a keyword library of 220+ terms across 6 risk categories. Severity is scored 0-100 based on sentiment, mitigating/amplifying language, and keyword co-occurrence.")
-
+        pdf.multi_cell(0, 5, "All 18 standard 10-K items scanned with 220+ risk keywords across 6 categories. "
+                              "Severity scored 0-100 based on sentiment, mitigating/amplifying language, "
+                              "and keyword co-occurrence within sections.")
         pdf.ln(3)
         pdf.set_font("Helvetica", "", 9)
-        pdf.cell(0, 4, "github.com/zshqv/RedFlag — Not financial advice.", ln=True)
+        pdf.cell(0, 5, "github.com/zshqv/RedFlag  |  Not financial advice.", ln=True)
 
-        filepath = os.path.join(OUTPUT_DIR, f"{ticker}_redflag.pdf")
         pdf.output(filepath)
+        print(f"[RedFlag] PDF saved (FPDF2 fallback): {filepath}")
         return filepath
 
-    except ImportError:
-        print("[RedFlag] FPDF2 not available, skipping PDF generation")
+    except Exception as e:
+        print(f"[RedFlag] PDF generation failed: {e}")
         return None
 
+
+# ─────────────────────────────────────────────────────────────
+#  PPTX (python-pptx only, no matplotlib)
+# ─────────────────────────────────────────────────────────────
+
+def _blank_slide(prs, bg_rgb=None):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    if bg_rgb:
+        bg = slide.background.fill
+        bg.solid()
+        bg.fore_color.rgb = bg_rgb
+    return slide
+
+
+def _textbox(slide, left, top, width, height, text, size=12, bold=False,
+             color=None, align=PP_ALIGN.LEFT, word_wrap=True):
+    tb = slide.shapes.add_textbox(left, top, width, height)
+    tf = tb.text_frame
+    tf.word_wrap = word_wrap
+    p = tf.paragraphs[0]
+    p.text = sanitize(text)
+    p.font.size = Pt(size)
+    p.font.bold = bold
+    if color:
+        p.font.color.rgb = color
+    p.alignment = align
+    return tb
+
+
+def _rect(slide, left, top, width, height, fill_rgb, line_rgb=None):
+    shape = slide.shapes.add_shape(1, left, top, width, height)
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = fill_rgb
+    if line_rgb:
+        shape.line.color.rgb = line_rgb
+    else:
+        shape.line.width = 0
+    return shape
+
+
+def _sev_color(severity):
+    return {"HIGH": RED, "MEDIUM": AMBER, "LOW": GREEN}.get(severity, GREY)
+
+
 def generate_pptx(ticker, analysis, comparison, latest_date, exchange):
-    """Generate 8-slide PPTX presentation."""
     ensure_output_dir()
 
     prs = Presentation()
-    prs.slide_width = Inches(13.333)
+    prs.slide_width  = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
     findings = analysis["findings"]
-    summary = analysis["summary"]
-
-    high_count = summary["by_severity"].get("HIGH", 0)
+    summary  = analysis["summary"]
+    high_count   = summary["by_severity"].get("HIGH", 0)
     medium_count = summary["by_severity"].get("MEDIUM", 0)
-    low_count = summary["by_severity"].get("LOW", 0)
-    total = summary["total"]
+    low_count    = summary["by_severity"].get("LOW", 0)
+    total        = summary["total"]
+    new_kws      = comparison.get("new_keywords", [])
+    overall      = comparison.get("overall", {})
+    by_cat       = summary.get("by_category", {})
 
+    # ── Slide 1: Cover ───────────────────────────────────────
     print("[RedFlag] Building slide 1: Cover")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(26, 26, 46)
+    s1 = _blank_slide(prs, NAVY)
+    _textbox(s1, Inches(1), Inches(1.8), Inches(11.333), Inches(2),
+             f"{ticker}: RedFlag Risk Report", size=44, bold=True, color=WHITE)
+    _textbox(s1, Inches(1), Inches(3.6), Inches(8), Inches(0.7),
+             f"{exchange}  |  {latest_date}", size=18, color=RGBColor(0xCC, 0xCC, 0xCC))
 
-    left = Inches(1)
-    top = Inches(2)
-    width = Inches(11.333)
-    height = Inches(2)
+    # Verdict box (bottom right)
+    if high_count > 0:
+        vl, vc = "CRITICAL RISK", RED
+    elif medium_count > 3:
+        vl, vc = "ELEVATED RISK", AMBER
+    else:
+        vl, vc = "LOW RISK", GREEN
+    vbox = _rect(s1, Inches(9), Inches(4.8), Inches(3.8), Inches(1.5), vc)
+    tf = vbox.text_frame
+    tf.text = sanitize(vl)
+    tf.paragraphs[0].font.size = Pt(22); tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.color.rgb = WHITE
+    tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    tf.vertical_anchor = 1
 
-    title_box = slide.shapes.add_textbox(left, top, width, height)
-    title_frame = title_box.text_frame
-    title_frame.text = sanitize_text(f"{ticker}: RedFlag Risk Report")
-    title_frame.paragraphs[0].font.size = Pt(54)
-    title_frame.paragraphs[0].font.bold = True
-    title_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
+    _textbox(s1, Inches(1), Inches(5.0), Inches(7.5), Inches(0.6),
+             f"Total: {total}  |  HIGH: {high_count}  |  MEDIUM: {medium_count}  |  LOW: {low_count}",
+             size=14, color=WHITE)
+    _textbox(s1, Inches(10.5), Inches(6.9), Inches(2.5), Inches(0.5),
+             "RedFlag", size=12, bold=True, color=RGBColor(0xAA, 0xAA, 0xAA), align=PP_ALIGN.RIGHT)
 
-    subtitle_box = slide.shapes.add_textbox(left, top + Inches(2.2), width, Inches(1))
-    subtitle_frame = subtitle_box.text_frame
-    subtitle_frame.text = sanitize_text(f"{exchange} | {latest_date}")
-    subtitle_frame.paragraphs[0].font.size = Pt(24)
-    subtitle_frame.paragraphs[0].font.color.rgb = RGBColor(200, 200, 200)
-
-    footer_box = slide.shapes.add_textbox(left, top + Inches(4.5), width, Inches(1))
-    footer_frame = footer_box.text_frame
-    footer_frame.text = f"Total: {total} | HIGH: {high_count} | MEDIUM: {medium_count} | LOW: {low_count}"
-    footer_frame.paragraphs[0].font.size = Pt(18)
-    footer_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
-
+    # ── Slide 2: Risk Scorecard ──────────────────────────────
     print("[RedFlag] Building slide 2: Risk Scorecard")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(245, 245, 245)
+    s2 = _blank_slide(prs, GREY)
+    _textbox(s2, Inches(0.5), Inches(0.3), Inches(12), Inches(0.7),
+             "Risk Scorecard", size=28, bold=True, color=NAVY)
 
     metrics = [
-        ("Total", str(total), RGBColor(100, 100, 100)),
-        ("HIGH", str(high_count), RGBColor(231, 76, 60)),
-        ("MEDIUM", str(medium_count), RGBColor(243, 156, 18)),
-        ("LOW", str(low_count), RGBColor(39, 174, 96)),
+        ("Total",       str(total),        NAVY),
+        ("HIGH",        str(high_count),   RED),
+        ("MEDIUM",      str(medium_count), AMBER),
+        ("LOW",         str(low_count),    GREEN),
+        ("New Keywords",str(len(new_kws)), NAVY),
+        ("Avg Sentiment",
+         str(round(summary.get("avg_sentiment", 0.0), 3)), NAVY),
     ]
-
-    for idx, (label, value, color) in enumerate(metrics):
-        left_pos = Inches(1 + idx * 2.8)
-        box = slide.shapes.add_shape(1, left_pos, Inches(2), Inches(2), Inches(2.5))
-        box.fill.solid()
-        box.fill.fore_color.rgb = RGBColor(255, 255, 255)
-        box.line.color.rgb = color
-
-        text_frame = box.text_frame
-        text_frame.word_wrap = True
-        p = text_frame.paragraphs[0]
-        p.text = sanitize_text(value)
-        p.font.size = Pt(36)
-        p.font.bold = True
-        p.font.color.rgb = color
+    for i, (label, value, color) in enumerate(metrics):
+        lp = Inches(0.5 + i * 2.05)
+        box = _rect(s2, lp, Inches(1.5), Inches(1.9), Inches(3.5), WHITE, color)
+        tf = box.text_frame; tf.word_wrap = True
+        p = tf.paragraphs[0]; p.text = sanitize(value)
+        p.font.size = Pt(32); p.font.bold = True; p.font.color.rgb = color
         p.alignment = PP_ALIGN.CENTER
+        _textbox(s2, lp, Inches(5.3), Inches(1.9), Inches(0.6),
+                 label, size=11, bold=True, color=NAVY, align=PP_ALIGN.CENTER)
 
-        label_box = slide.shapes.add_textbox(left_pos, Inches(4.8), Inches(2), Inches(0.8))
-        label_frame = label_box.text_frame
-        label_frame.text = sanitize_text(label)
-        label_frame.paragraphs[0].font.size = Pt(14)
-        label_frame.paragraphs[0].font.bold = True
-        label_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+    # ── Slide 3: Category Risk Heat Map (native pptx chart) ──
+    print("[RedFlag] Building slide 3: Category Risk Heat Map")
+    s3 = _blank_slide(prs, WHITE)
+    _textbox(s3, Inches(0.5), Inches(0.2), Inches(12), Inches(0.6),
+             "Risk Heat Map — Findings by Category", size=26, bold=True, color=NAVY)
 
-    print("[RedFlag] Building slide 3: Category Breakdown (bar chart)")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(255, 255, 255)
+    if by_cat:
+        cd = ChartData()
+        cd.categories = list(by_cat.keys())
+        cd.add_series("Risk Flags", [int(v) for v in by_cat.values()])
+        chart_frame = s3.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            Inches(0.5), Inches(1.0), Inches(12.333), Inches(6.0), cd
+        )
+        chart = chart_frame.chart
+        chart.has_legend = False
+        chart.series[0].format.fill.solid()
+        chart.series[0].format.fill.fore_color.rgb = NAVY
 
-    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.6))
-    title_frame = title_box.text_frame
-    title_frame.text = "Risk Findings by Category"
-    title_frame.paragraphs[0].font.size = Pt(28)
-    title_frame.paragraphs[0].font.bold = True
-    title_frame.paragraphs[0].font.color.rgb = RGBColor(26, 26, 46)
-
-    categories = list(summary["by_category"].items())
-    for idx, (cat_name, cat_count) in enumerate(categories[:6]):
-        left_pos = Inches(0.8 + idx * 1.8)
-        bar_height = min(4.5, cat_count * 0.3)
-        bar = slide.shapes.add_shape(1, left_pos, Inches(5.5 - bar_height), Inches(1.4), Inches(bar_height))
-        bar.fill.solid()
-        bar.fill.fore_color.rgb = RGBColor(26, 26, 46)
-        bar.line.width = 0
-
-        label_box = slide.shapes.add_textbox(left_pos, Inches(6), Inches(1.4), Inches(0.4))
-        label_frame = label_box.text_frame
-        label_frame.text = sanitize_text(cat_name)
-        label_frame.paragraphs[0].font.size = Pt(10)
-        label_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-
-        value_box = slide.shapes.add_textbox(left_pos, Inches(5.2 - bar_height), Inches(1.4), Inches(0.3))
-        value_frame = value_box.text_frame
-        value_frame.text = str(cat_count)
-        value_frame.paragraphs[0].font.size = Pt(11)
-        value_frame.paragraphs[0].font.bold = True
-        value_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
-        value_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-
+    # ── Slide 4 (+ 4b): All Flags by Tier ───────────────────
     print("[RedFlag] Building slide 4: All Flags by Tier")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(255, 255, 255)
 
-    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.6))
-    title_frame = title_box.text_frame
-    title_frame.text = "All Findings by Severity Tier"
-    title_frame.paragraphs[0].font.size = Pt(28)
-    title_frame.paragraphs[0].font.bold = True
+    high_f   = [f for f in findings if f["severity"] == "HIGH"]
+    medium_f = [f for f in findings if f["severity"] == "MEDIUM"]
+    low_f    = [f for f in findings if f["severity"] == "LOW"]
 
-    high_findings = [f for f in findings if f["severity"] == "HIGH"]
-    medium_findings = [f for f in findings if f["severity"] == "MEDIUM"]
-    low_findings = [f for f in findings if f["severity"] == "LOW"]
+    MAX_PER_COL = 20
+    need_overflow = any(len(t) > MAX_PER_COL for t in [high_f, medium_f, low_f])
 
-    columns = [
-        ("HIGH", high_findings, RGBColor(231, 76, 60)),
-        ("MEDIUM", medium_findings, RGBColor(243, 156, 18)),
-        ("LOW", low_findings, RGBColor(39, 174, 96)),
-    ]
+    def _flags_slide(prs, hi_slice, me_slice, lo_slice, title):
+        s = _blank_slide(prs, WHITE)
+        _textbox(s, Inches(0.5), Inches(0.2), Inches(12), Inches(0.6),
+                 title, size=24, bold=True, color=NAVY)
+        for ci, (tier, tier_f, col_color) in enumerate([
+            ("HIGH", hi_slice, RED), ("MEDIUM", me_slice, AMBER), ("LOW", lo_slice, GREEN)
+        ]):
+            lp = Inches(0.4 + ci * 4.2)
+            hbox = _rect(s, lp, Inches(1.0), Inches(3.9), Inches(0.45), col_color)
+            tf = hbox.text_frame
+            tf.text = sanitize(f"{tier}  ({len(tier_f)})")
+            tf.paragraphs[0].font.size = Pt(12)
+            tf.paragraphs[0].font.bold = True
+            tf.paragraphs[0].font.color.rgb = WHITE
+            tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            tf.vertical_anchor = 1
 
-    for col_idx, (tier_name, tier_findings, color) in enumerate(columns):
-        left_pos = Inches(0.5 + col_idx * 4)
-        top_pos = Inches(1.2)
+            tb = s.shapes.add_textbox(lp, Inches(1.55), Inches(3.9), Inches(5.8))
+            tf2 = tb.text_frame; tf2.word_wrap = True
+            for f in tier_f:
+                pg = tf2.add_paragraph()
+                pg.text = sanitize(f"Pg{f['page_num']} — {f['keyword']} — {f['section']}")
+                pg.font.size = Pt(9)
+        return s
 
-        header_box = slide.shapes.add_shape(1, left_pos, top_pos, Inches(3.8), Inches(0.4))
-        header_box.fill.solid()
-        header_box.fill.fore_color.rgb = color
-        header_frame = header_box.text_frame
-        header_frame.text = sanitize_text(f"{tier_name} ({len(tier_findings)})")
-        header_frame.paragraphs[0].font.size = Pt(12)
-        header_frame.paragraphs[0].font.bold = True
-        header_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
-        header_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+    _flags_slide(prs, high_f[:MAX_PER_COL], medium_f[:MAX_PER_COL], low_f[:MAX_PER_COL],
+                 "All Flags by Tier")
+    if need_overflow:
+        print("[RedFlag] Building slide 4b: All Flags by Tier (continued)")
+        _flags_slide(prs, high_f[MAX_PER_COL:], medium_f[MAX_PER_COL:], low_f[MAX_PER_COL:],
+                     "All Flags by Tier (continued)")
 
-        text_box = slide.shapes.add_textbox(left_pos, top_pos + Inches(0.5), Inches(3.8), Inches(5.5))
-        text_frame = text_box.text_frame
-        text_frame.word_wrap = True
+    # ── Slide 5: Top 3 Flags ────────────────────────────────
+    print("[RedFlag] Building slide 5: Top 3 Flags to Present")
+    s5 = _blank_slide(prs, WHITE)
+    _textbox(s5, Inches(0.5), Inches(0.2), Inches(12), Inches(0.6),
+             "Top 3 Flags to Present", size=26, bold=True, color=NAVY)
 
-        for finding in tier_findings[:8]:
-            p = text_frame.add_paragraph()
-            p.text = sanitize_text(f"• Pg{finding['page_num']} — {finding['keyword']} ({finding['section']})")
-            p.font.size = Pt(9)
-            p.level = 0
+    for idx, f in enumerate(findings[:3]):
+        tp = Inches(1.1 + idx * 2.1)
+        col = _sev_color(f["severity"])
+        # colored left border
+        _rect(s5, Inches(0.5), tp, Inches(0.08), Inches(1.9), col)
+        card = _rect(s5, Inches(0.62), tp, Inches(12.2), Inches(1.9), WHITE, NAVY)
+        tf = card.text_frame; tf.word_wrap = True
+        p1 = tf.paragraphs[0]
+        p1.text = sanitize(f"{idx+1}. {f['keyword']}  —  {f['section']}  (Pg {f['page_num']})  [{f['category']}]")
+        p1.font.size = Pt(11); p1.font.bold = True; p1.font.color.rgb = NAVY
+        p2 = tf.add_paragraph()
+        p2.text = sanitize(f["flagged_sentence"][:120])
+        p2.font.size = Pt(9)
+        p3 = tf.add_paragraph()
+        p3.text = sanitize(f["explanation"][:140])
+        p3.font.size = Pt(9); p3.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
 
-    print("[RedFlag] Building slide 5: Top 3 Flags")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(255, 255, 255)
+    # ── Slide 6: New Keywords ────────────────────────────────
+    print("[RedFlag] Building slide 6: New Keywords This Year")
+    s6 = _blank_slide(prs, WHITE)
+    _textbox(s6, Inches(0.5), Inches(0.2), Inches(12), Inches(0.7),
+             "New Keywords This Year", size=26, bold=True, color=NAVY)
+    _textbox(s6, Inches(0.5), Inches(0.85), Inches(12), Inches(0.4),
+             "Absent in prior year's filing", size=13, color=RGBColor(0x66, 0x66, 0x66))
 
-    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.6))
-    title_frame = title_box.text_frame
-    title_frame.text = "Top 3 Critical Findings to Present"
-    title_frame.paragraphs[0].font.size = Pt(28)
-    title_frame.paragraphs[0].font.bold = True
+    kw_to_cat = {f["keyword"]: f["category"] for f in findings}
+    for i, kw in enumerate(new_kws[:24]):
+        col_idx = i % 4
+        row_idx = i // 4
+        lp = Inches(0.5 + col_idx * 3.2)
+        tp = Inches(1.5  + row_idx * 1.2)
+        pill = _rect(s6, lp, tp, Inches(3.0), Inches(0.7), RGBColor(0xE8, 0xE8, 0xE8))
+        tf = pill.text_frame; tf.word_wrap = True
+        p = tf.paragraphs[0]; p.text = sanitize(kw)
+        p.font.size = Pt(10); p.font.bold = True; p.alignment = PP_ALIGN.CENTER
+        p2 = tf.add_paragraph(); p2.text = sanitize(kw_to_cat.get(kw, ""))
+        p2.font.size = Pt(8); p2.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+        p2.alignment = PP_ALIGN.CENTER
 
-    for idx, finding in enumerate(findings[:3]):
-        top_pos = Inches(1.2 + idx * 2)
-        card = slide.shapes.add_shape(1, Inches(0.5), top_pos, Inches(12.333), Inches(1.8))
-        card.fill.solid()
-        card.fill.fore_color.rgb = RGBColor(240, 240, 240)
-        card.line.color.rgb = RGBColor(26, 26, 46)
-
-        text_box = slide.shapes.add_textbox(Inches(0.7), top_pos + Inches(0.1), Inches(12), Inches(1.6))
-        text_frame = text_box.text_frame
-        text_frame.word_wrap = True
-
-        p = text_frame.paragraphs[0]
-        p.text = sanitize_text(f"{idx+1}. {finding['keyword']} — {finding['section']} (Pg {finding['page_num']})")
-        p.font.size = Pt(12)
-        p.font.bold = True
-        p.font.color.rgb = RGBColor(26, 26, 46)
-
-        p2 = text_frame.add_paragraph()
-        p2.text = sanitize_text(finding["explanation"][:100])
-        p2.font.size = Pt(10)
-        p2.level = 0
-
-    print("[RedFlag] Building slide 6: New Keywords")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(255, 255, 255)
-
-    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.6))
-    title_frame = title_box.text_frame
-    title_frame.text = "New Keywords This Year (Absent in Prior Year)"
-    title_frame.paragraphs[0].font.size = Pt(24)
-    title_frame.paragraphs[0].font.bold = True
-
-    new_kws = comparison.get("new_keywords", [])
-    for idx, kw in enumerate(new_kws[:20]):
-        col = idx % 4
-        row_num = idx // 4
-        left_pos = Inches(0.5 + col * 3)
-        top_pos = Inches(1.3 + row_num * 1.2)
-
-        kw_box = slide.shapes.add_shape(1, left_pos, top_pos, Inches(2.8), Inches(0.8))
-        kw_box.fill.solid()
-        kw_box.fill.fore_color.rgb = RGBColor(230, 230, 230)
-        kw_frame = kw_box.text_frame
-        kw_frame.text = sanitize_text(kw)
-        kw_frame.paragraphs[0].font.size = Pt(11)
-        kw_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-        kw_frame.vertical_anchor = 1
-
+    # ── Slide 7: YoY Trajectory ──────────────────────────────
     print("[RedFlag] Building slide 7: YoY Trajectory")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(255, 255, 255)
+    s7 = _blank_slide(prs, WHITE)
+    _textbox(s7, Inches(0.5), Inches(0.2), Inches(12), Inches(0.7),
+             "Year-Over-Year Risk Trajectory", size=26, bold=True, color=NAVY)
 
-    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.6))
-    title_frame = title_box.text_frame
-    title_frame.text = "Year-Over-Year Risk Trajectory"
-    title_frame.paragraphs[0].font.size = Pt(28)
-    title_frame.paragraphs[0].font.bold = True
+    traj = overall.get("trajectory", "STABLE")
+    traj_col = RED if traj in ("DETERIORATING", "INCREASING") else GREEN if "IMPROV" in traj else GREY
+    tbox = _rect(s7, Inches(2.5), Inches(1.2), Inches(8.333), Inches(1.8), traj_col)
+    tf = tbox.text_frame; tf.text = sanitize(traj)
+    tf.paragraphs[0].font.size = Pt(42); tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.color.rgb = WHITE; tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    tf.vertical_anchor = 1
 
-    traj = comparison.get("overall", {}).get("trajectory", "STABLE")
-    traj_color = {"DETERIORATING": RGBColor(231, 76, 60), "STABLE": RGBColor(100, 100, 100)}.get(traj, RGBColor(39, 174, 96))
+    # Prior vs This Year comparison table
+    cat_comp = comparison.get("by_category", {})
+    tb = s7.shapes.add_textbox(Inches(0.5), Inches(3.2), Inches(12.333), Inches(4.0))
+    tf2 = tb.text_frame; tf2.word_wrap = True
+    header_p = tf2.paragraphs[0]
+    header_p.text = sanitize("Category                Prior Year  →  This Year   Delta")
+    header_p.font.size = Pt(10); header_p.font.bold = True; header_p.font.color.rgb = NAVY
+    for cat, cd in list(cat_comp.items())[:8]:
+        pg = tf2.add_paragraph()
+        delta = cd.get("change", 0)
+        arrow = "▲" if delta > 0 else ("▼" if delta < 0 else "━")
+        pg.text = sanitize(f"{cat:<28} {cd.get('previous_count',0):>4}  {arrow}  {cd.get('current_count',0):>4}   ({'+' if delta>0 else ''}{delta})")
+        pg.font.size = Pt(10)
 
-    traj_box = slide.shapes.add_shape(1, Inches(2), Inches(2.5), Inches(9.333), Inches(2))
-    traj_box.fill.solid()
-    traj_box.fill.fore_color.rgb = traj_color
-    traj_frame = traj_box.text_frame
-    traj_frame.text = sanitize_text(traj)
-    traj_frame.paragraphs[0].font.size = Pt(48)
-    traj_frame.paragraphs[0].font.bold = True
-    traj_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
-    traj_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-    traj_frame.vertical_anchor = 1
-
-    print("[RedFlag] Building slide 8: Methodology")
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(26, 26, 46)
-
-    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12), Inches(0.8))
-    title_frame = title_box.text_frame
-    title_frame.text = "Source & Methodology"
-    title_frame.paragraphs[0].font.size = Pt(28)
-    title_frame.paragraphs[0].font.bold = True
-    title_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
-
-    info_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.8))
-    info_frame = info_box.text_frame
-    info_frame.word_wrap = True
+    # ── Slide 8: Source & Methodology ───────────────────────
+    print("[RedFlag] Building slide 8: Source and Methodology")
+    s8 = _blank_slide(prs, NAVY)
+    _textbox(s8, Inches(0.5), Inches(0.3), Inches(12), Inches(0.8),
+             "Source & Methodology", size=26, bold=True, color=WHITE)
 
     lines = [
-        f"Filing: {ticker} | {exchange} | {latest_date}",
+        f"Filing: {ticker}  |  {exchange}  |  {latest_date}",
         "Keywords Scanned: 220+ across 6 risk categories",
         "Sections Analyzed: All 18 standard 10-K items",
-        "Severity Scoring: Rule-based (0–100 scale)",
-        "Explanation Engine: Claude API (Haiku 4.5) with fallback",
+        "Severity Scoring: Rule-based, clamped 0-100",
+        "Explanation Engine: Claude API (claude-haiku-4-5-20251001) + fallback",
         "",
-        "⚠ DISCLAIMER: Not financial advice. For due diligence use only.",
-        "RedFlag is a co-pilot tool — validate all findings with human analysis.",
         "github.com/zshqv/RedFlag",
+        "Not financial advice. For due diligence purposes only.",
     ]
-
-    for line in lines:
-        p = info_frame.add_paragraph()
-        p.text = sanitize_text(line)
-        p.font.size = Pt(14)
-        p.font.color.rgb = RGBColor(255, 255, 255)
-        p.space_before = Pt(6)
+    tb = s8.shapes.add_textbox(Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.8))
+    tf = tb.text_frame; tf.word_wrap = True
+    for i, line in enumerate(lines):
+        pg = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        pg.text = sanitize(line)
+        pg.font.size = Pt(14); pg.font.color.rgb = WHITE
+        if line.startswith("Not financial"):
+            pg.font.size = Pt(11); pg.font.color.rgb = RGBColor(0xFF, 0xCC, 0x00)
+        pg.space_before = Pt(4)
 
     filepath = os.path.join(OUTPUT_DIR, f"{ticker}_dashboard.pptx")
     prs.save(filepath)
+    print(f"[RedFlag] PPTX saved: {filepath}")
     return filepath
+
+
+# ─────────────────────────────────────────────────────────────
+#  MASTER
+# ─────────────────────────────────────────────────────────────
 
 def generate_reports(ticker, analysis, comparison, latest_date, previous_date, exchange):
     """Master function — generates Excel, PDF, and PPTX."""
     excel_path = generate_excel(ticker, analysis, comparison, latest_date, previous_date)
-    pdf_path = generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_date)
-    pptx_path = generate_pptx(ticker, analysis, comparison, latest_date, exchange)
-
-    return {
-        "excel": excel_path,
-        "pdf": pdf_path,
-        "pptx": pptx_path
-    }
+    pdf_path   = generate_pdf(ticker, analysis, comparison, latest_date, exchange, previous_date)
+    pptx_path  = generate_pptx(ticker, analysis, comparison, latest_date, exchange)
+    return {"excel": excel_path, "pdf": pdf_path, "pptx": pptx_path}
