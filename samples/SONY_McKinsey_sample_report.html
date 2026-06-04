@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>RedFlag — SONY</title>
+    <style>
+        @page { size: A4; margin: 18mm 15mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #222; background: white; line-height: 1.5; }
+
+        .page { page-break-before: always; padding-bottom: 20px; }
+        .page-first { page-break-before: avoid; }
+
+        /* ── Cover header ── */
+        .cover-header {
+            background: #1a1a2e;
+            margin-top: -18mm;
+            margin-left: -15mm;
+            margin-right: -15mm;
+            padding: calc(18mm + 16px) calc(15mm + 12px) 20px;
+        }
+        .cover-header-inner { position: relative; }
+        .cover-topright { position: absolute; top: 0; right: 0; text-align: right; font-size: 9pt; color: #9999bb; line-height: 1.6; }
+        .cover-company { font-size: 28pt; font-weight: 500; color: #ffffff; margin-bottom: 5px; }
+        .cover-meta { font-size: 11pt; color: #9999bb; margin-bottom: 12px; }
+
+        /* ── Verdict pill ── */
+        .verdict-pill { display: inline-block; padding: 5px 16px; border-radius: 3px; font-weight: bold; font-size: 13pt; color: #ffffff; }
+        .verdict-red   { background: #E24B4A; }
+        .verdict-amber { background: #EF9F27; }
+        .verdict-green { background: #3B6D11; }
+
+        /* ── 6-cell stat grid ── */
+        .stat-grid { width: 100%; border-collapse: collapse; margin: 14px 0; }
+        .stat-grid td { border: 1px solid #ddd; padding: 10px 8px; text-align: center; vertical-align: top; width: 16.6%; }
+        .stat-num { font-size: 22pt; font-weight: bold; color: #1a1a2e; line-height: 1.2; }
+        .stat-num.red   { color: #E24B4A; }
+        .stat-num.amber { color: #EF9F27; }
+        .stat-num.green { color: #3B6D11; }
+        .stat-label { font-size: 8pt; color: #666; margin-top: 3px; }
+        .stat-delta { font-size: 9pt; color: #888; }
+
+        /* ── Bottom line box ── */
+        .bottom-line-box {
+            border-left: 3px solid #1a1a2e;
+            background: #f5f5f5;
+            padding: 12px 16px;
+            margin-top: 14px;
+            font-size: 13pt;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* ── Page footer ── */
+        .page-footer { text-align: right; font-size: 9pt; color: #999; margin-top: 18px; }
+
+        /* ── Section title ── */
+        .section-title {
+            font-size: 14pt;
+            font-weight: 500;
+            color: #1a1a2e;
+            border-bottom: 2px solid #1a1a2e;
+            padding-bottom: 5px;
+            margin-bottom: 14px;
+        }
+        .section-subtitle { font-size: 10pt; color: #666; margin-bottom: 12px; margin-top: -10px; }
+
+        /* ── Heat map bars ── */
+        .heatmap-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        .heatmap-table td { padding: 3px 6px; vertical-align: middle; }
+        .hm-label { font-size: 10pt; color: #333; width: 28%; }
+        .hm-bar-cell { width: 48%; }
+        .hm-bar-bg { background: #eeeeee; height: 16px; width: 100%; }
+        .hm-bar { height: 16px; }
+        .hm-count { font-size: 10pt; font-weight: bold; text-align: center; width: 8%; }
+        .hm-delta { font-size: 11pt; text-align: center; width: 8%; font-weight: bold; }
+
+        /* ── Tier chips ── */
+        .tier-chip { display: inline-block; padding: 4px 12px; font-weight: bold; font-size: 10pt; color: #ffffff; margin-right: 6px; }
+        .chip-red   { background: #E24B4A; }
+        .chip-amber { background: #EF9F27; }
+        .chip-green { background: #3B6D11; }
+
+        /* ── Section divider ── */
+        .divider { padding: 6px 12px; margin: 14px 0 8px; font-weight: bold; font-size: 12pt; color: white; }
+        .div-navy  { background: #1a1a2e; }
+        .div-red   { background: #E24B4A; border-left: 4px solid #a83331; }
+        .div-amber { background: #EF9F27; border-left: 4px solid #a36e1b; }
+        .div-green { background: #3B6D11; border-left: 4px solid #254809; }
+
+        /* ── Finding cards ── */
+        .card { margin: 8px 0; page-break-inside: avoid; }
+        .card-header { padding: 5px 10px; font-size: 9pt; font-weight: bold; color: #ffffff; }
+        .card-header.high   { background: #E24B4A; }
+        .card-header.medium { background: #EF9F27; }
+        .card-header.low    { background: #3B6D11; }
+        .kw-pill { display: inline-block; background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 2px; margin-left: 8px; font-size: 8pt; }
+
+        .ctx-block { border-left: 3px solid #cccccc; padding: 4px 8px; margin: 3px 0; font-style: italic; color: #888888; font-size: 9pt; }
+
+        .flagged-high   { background: #fff5f5; border-left: 3px solid #E24B4A; padding: 6px 10px; margin: 3px 0; font-size: 11pt; }
+        .flagged-medium { background: #fffbf0; border-left: 3px solid #EF9F27; padding: 6px 10px; margin: 3px 0; font-size: 11pt; }
+        .flagged-low    { background: #f4faf4; border-left: 3px solid #3B6D11; padding: 6px 10px; margin: 3px 0; font-size: 11pt; }
+
+        .why-box { background: #f5f5f5; padding: 8px 12px; margin: 3px 0; font-size: 11pt; line-height: 1.6; color: #333333; }
+
+        /* ── New keyword cards ── */
+        .kw-card { border-left: 3px solid #1a1a2e; padding: 8px 12px; margin: 6px 0; background: #fafafa; page-break-inside: avoid; }
+        .kw-card-name { font-size: 12pt; font-weight: bold; color: #1a1a2e; }
+        .cat-badge { display: inline-block; background: #1a1a2e; color: white; font-size: 8pt; padding: 1px 7px; border-radius: 2px; margin-left: 8px; vertical-align: middle; }
+        .sev-score { display: inline-block; font-size: 9pt; color: #666; margin-left: 8px; }
+        .kw-desc { font-size: 10pt; color: #555; margin-top: 4px; line-height: 1.5; }
+        .dot-legend { font-size: 9pt; color: #666; margin-top: 12px; }
+        .dot-high   { color: #E24B4A; }
+        .dot-mid    { color: #EF9F27; }
+        .dot-low    { color: #3B6D11; }
+
+        /* ── Dashboard ── */
+        .dash-title { font-size: 16pt; font-weight: bold; color: #1a1a2e; text-align: center; margin-bottom: 14px; }
+        .dash-rule  { border: none; border-top: 1px solid #cccccc; margin: 14px 0; }
+        .three-raise-item { margin: 10px 0; page-break-inside: avoid; }
+        .raise-num { font-size: 14pt; font-weight: bold; color: #1a1a2e; margin-right: 6px; }
+        .raise-text { font-size: 13pt; color: #222; line-height: 1.5; }
+        .raise-tag { display: inline-block; font-size: 9pt; color: #888; background: #f0f0f0; padding: 2px 8px; margin-top: 3px; }
+
+        /* ── Source table ── */
+        .source-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+        .source-table td { padding: 6px 10px; border-bottom: 1px solid #eeeeee; vertical-align: top; }
+        .source-table td.lbl { font-size: 10pt; color: #999999; width: 38%; background: #fafafa; }
+        .source-table td.val { font-size: 12pt; color: #222; }
+
+        .full-disclaimer { font-size: 9pt; color: #888888; margin-top: 16px; line-height: 1.6; background: #f5f5f5; padding: 10px 12px; }
+
+        /* Low findings note */
+        .low-note { font-size: 9pt; color: #888; font-style: italic; margin: 6px 0 10px; }
+
+        /* YoY comparison table */
+        .yoy-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10pt; }
+        .yoy-table th { background: #1a1a2e; color: white; padding: 5px 8px; text-align: left; }
+        .yoy-table td { padding: 5px 8px; border-bottom: 1px solid #eeeeee; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 1 — COVER
+════════════════════════════════════════════ -->
+<div class="page-first">
+    <div class="cover-header">
+        <div class="cover-header-inner">
+            <div class="cover-topright">RedFlag v2.0<br>2026-06-05</div>
+            <div class="cover-company">Sony Group Corporation</div>
+            <div class="cover-meta">SONY &nbsp;·&nbsp; 20-F / Annual Report &nbsp;·&nbsp; 2025-06-20 &nbsp;·&nbsp; SEC EDGAR (20-F / Foreign Private Issuer)</div>
+            <div class="verdict-pill verdict-red">HIGH RISK</div>
+        </div>
+    </div>
+
+    <!-- 6-cell stat grid -->
+    
+    
+    
+    
+        
+        
+    
+        
+        
+    
+        
+        
+    
+        
+        
+    
+        
+        
+    
+        
+        
+    
+
+    <table class="stat-grid">
+        <tr>
+            <td>
+                <div class="stat-num">133</div>
+                <div class="stat-label">Total flags</div>
+            </td>
+            <td>
+                <div class="stat-num red">8</div>
+                <div class="stat-label">High severity</div>
+            </td>
+            <td>
+                <div class="stat-num">5</div>
+                <div class="stat-label">New keywords</div>
+            </td>
+            <td>
+                <div class="stat-num amber">—</div>
+                <div class="stat-label">Regulatory flags</div>
+                <div class="stat-delta">
+                    
+                </div>
+            </td>
+            <td>
+                <div class="stat-num amber">—</div>
+                <div class="stat-label">Legal flags</div>
+                <div class="stat-delta">
+                    
+                </div>
+            </td>
+            <td>
+                <div class="stat-num green">0.033</div>
+                <div class="stat-label">Avg sentiment</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Bottom line -->
+    <div class="bottom-line-box">Governance exposure has stable year-over-year, with "no assurance" representing the highest-severity flag. 5 new keyword(s) — including "SOX 404" — suggest a changing disclosure posture not present in the prior filing.</div>
+
+    <div class="page-footer">
+        Not financial advice &nbsp;·&nbsp; For due diligence purposes only &nbsp;·&nbsp; RedFlag &nbsp;·&nbsp; github.com/zshqv/RedFlag
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 2 — RISK HEAT MAP
+════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-title">Risk exposure — category breakdown</div>
+
+    
+        
+        
+            
+            
+        
+        
+        
+            
+        
+        
+        
+    <table class="heatmap-table">
+        <tr>
+            <td class="hm-label">Operational</td>
+            <td class="hm-bar-cell">
+                <div class="hm-bar-bg">
+                    <div class="hm-bar" style="background: #EF9F27; width: 23%;"></div>
+                </div>
+            </td>
+            <td class="hm-count">17</td>
+            <td class="hm-delta" style="color: #EF9F27;">→</td>
+        </tr>
+    </table>
+    
+        
+        
+            
+            
+        
+        
+        
+            
+        
+        
+        
+    <table class="heatmap-table">
+        <tr>
+            <td class="hm-label">Legal</td>
+            <td class="hm-bar-cell">
+                <div class="hm-bar-bg">
+                    <div class="hm-bar" style="background: #E24B4A; width: 16%;"></div>
+                </div>
+            </td>
+            <td class="hm-count">12</td>
+            <td class="hm-delta" style="color: #E24B4A;">↑</td>
+        </tr>
+    </table>
+    
+        
+        
+            
+            
+        
+        
+        
+            
+        
+        
+        
+    <table class="heatmap-table">
+        <tr>
+            <td class="hm-label">Governance</td>
+            <td class="hm-bar-cell">
+                <div class="hm-bar-bg">
+                    <div class="hm-bar" style="background: #EF9F27; width: 100%;"></div>
+                </div>
+            </td>
+            <td class="hm-count">71</td>
+            <td class="hm-delta" style="color: #EF9F27;">↑</td>
+        </tr>
+    </table>
+    
+        
+        
+            
+            
+        
+        
+        
+            
+        
+        
+        
+    <table class="heatmap-table">
+        <tr>
+            <td class="hm-label">Regulatory</td>
+            <td class="hm-bar-cell">
+                <div class="hm-bar-bg">
+                    <div class="hm-bar" style="background: #E24B4A; width: 28%;"></div>
+                </div>
+            </td>
+            <td class="hm-count">20</td>
+            <td class="hm-delta" style="color: #E24B4A;">↑</td>
+        </tr>
+    </table>
+    
+        
+        
+            
+            
+        
+        
+        
+            
+        
+        
+        
+    <table class="heatmap-table">
+        <tr>
+            <td class="hm-label">Forward-Looking</td>
+            <td class="hm-bar-cell">
+                <div class="hm-bar-bg">
+                    <div class="hm-bar" style="background: #E24B4A; width: 12%;"></div>
+                </div>
+            </td>
+            <td class="hm-count">9</td>
+            <td class="hm-delta" style="color: #E24B4A;">↑</td>
+        </tr>
+    </table>
+    
+        
+        
+            
+            
+        
+        
+        
+            
+        
+        
+        
+    <table class="heatmap-table">
+        <tr>
+            <td class="hm-label">Financial</td>
+            <td class="hm-bar-cell">
+                <div class="hm-bar-bg">
+                    <div class="hm-bar" style="background: #3B6D11; width: 5%;"></div>
+                </div>
+            </td>
+            <td class="hm-count">4</td>
+            <td class="hm-delta" style="color: #3B6D11;">↓</td>
+        </tr>
+    </table>
+    
+
+    <!-- Tier summary chips -->
+    <div style="margin: 14px 0 16px;">
+        <span class="tier-chip chip-red">HIGH &nbsp;·&nbsp; 8 flags</span>
+        <span class="tier-chip chip-amber">MEDIUM &nbsp;·&nbsp; 8 flags</span>
+        <span class="tier-chip chip-green">LOW &nbsp;·&nbsp; 117</span>
+    </div>
+
+    <!-- HIGH severity cards on this page -->
+    
+        <div class="divider div-red">High severity findings &nbsp;(8)</div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 106 &nbsp;·&nbsp; Sent 191
+                <span class="kw-pill">no assurance</span>
+            </div>
+            <div class="ctx-block">Sales of these products and services are particularly sensitive to the significant weighting of consumer demand to the year-end holiday season. In the G&NS segment, the successful introduction and penetration of gaming platforms, including streaming, is a significant factor driving sales and profita...</div>
+            <div class="flagged-high">However, there is no assurance that third-party software developers and publishers, major contributors to this effort, will continue to develop and release software.</div>
+            <div class="ctx-block">In addition, Sony believes that integrating its hardware, software, including AI, entertainment content and network services and minimizing their energy consumption, as well as investing in R&D to effect such integration, is essential in generating revenue growth and profitability. However, this str...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 120 &nbsp;·&nbsp; Sent 223
+                <span class="kw-pill">no assurance</span>
+            </div>
+            
+            <div class="flagged-high">Sony invests in programs to incentivize wholesalers, retailers, and other resellers and third-party distributors to position and promote Sony’s products, but there is no assurance that these programs will provide a significant return or incremental revenue by persuading consumers to buy Sony products instead of competitors’ products.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 145 &nbsp;·&nbsp; Sent 291
+                <span class="kw-pill">no assurance</span>
+            </div>
+            <div class="ctx-block">Additionally, global financial markets may experience significant levels of volatility and disruption, generally putting downward pressure on financial and other asset prices and impacting credit availability. Historically, Sony’s primary sources of funds have been cash flows from operations, the is...</div>
+            <div class="flagged-high">There can be no assurance that such sources will continue to be available on acceptable terms or be sufficient to meet Sony’s needs.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 181 &nbsp;·&nbsp; Sent 360
+                <span class="kw-pill">no assurance</span>
+            </div>
+            <div class="ctx-block">Sony believes, and maintains policies and procedures designed to ensure that, its transactions with Iran and elsewhere have been conducted in accordance with applicable economic sanctions laws and regulations and do not involve transactions likely to result in the imposition of sanctions or other pe...</div>
+            <div class="flagged-high">However, there can be no assurance that Sony’s policies and procedures will be effective, and if the relevant authorities were to impose penalties or sanctions against Sony, the impact of such sanctions could be material.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 16
+                <span class="kw-pill">restatement</span>
+            </div>
+            <div class="ctx-block">In 2022, the SEC adopted rules relating to the mandatory recovery of erroneously awarded incentive-based compensation received by certain current or former executive officers, and the NYSE has, in turn, adopted listing standards in connection with such rules. Accordingly, Sony Group Corporation’s Co...</div>
+            <div class="flagged-high">The Clawback Policy provides for the mandatory recovery of erroneously awarded incentive-based compensation received by each Executive Officer (as defined in the Clawback Policy) during the three-fiscal-year period prior to the date Sony Group Corporation is required to prepare an Accounting Restatement (as defined in the Clawback Policy), in accordance with the above rules and standards.</div>
+            <div class="ctx-block">The amount of erroneously awarded incentive compensation that the Executive Officers would be required to repay is the amount of incentive-based compensation paid to the Executive Officer that exceeds the amount the Executive Officer would have received had it been determined based on the restated a...</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 18
+                <span class="kw-pill">restatement</span>
+            </div>
+            <div class="ctx-block">The Clawback Policy provides for the mandatory recovery of erroneously awarded incentive-based compensation received by each Executive Officer (as defined in the Clawback Policy) during the three-fiscal-year period prior to the date Sony Group Corporation is required to prepare an Accounting Restate...</div>
+            <div class="flagged-high">The recovery of such compensation applies regardless of whether an Executive Officer engaged in misconduct or otherwise caused or contributed to the requirement of an accounting restatement.</div>
+            <div class="ctx-block">For further details and full text of the Clawback Policy, please refer to Exhibit 97.1 attached to this report.</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 202
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-high">Sony Group Corporation’s Audit Committee shall consist of at least three Directors.</div>
+            <div class="ctx-block">Under the Companies Act, a majority of its members shall be “outside” Directors, as defined under the Companies Act. In addition, pursuant to the Companies Act, no member of the Committee shall be a Director of the company or any of its subsidiaries who is engaged in the business operations of the c...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 307 &nbsp;·&nbsp; Sent 407
+                <span class="kw-pill">material weakness</span>
+            </div>
+            <div class="ctx-block">Such procedures included examining, on a test basis, evidence regarding the amounts and disclosures in the consolidated financial statements. Our audits also included evaluating the accounting principles used and significant estimates made by management, as well as evaluating the overall presentatio...</div>
+            <div class="flagged-high">Our audit of internal control over financial reporting included obtaining an understanding of internal control over financial reporting, assessing the risk that a material weakness exists, and testing and evaluating the design and operating effectiveness of internal control based on the assessed risk.</div>
+            <div class="ctx-block">Our audits also included performing such other procedures as we considered necessary in the circumstances. We believe that our audits provide a reasonable basis for our opinions.</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+    
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 3 — ALL HIGH + FIRST HALF OF MEDIUM
+════════════════════════════════════════════ -->
+<div class="page">
+    <div class="divider div-red">High severity findings &nbsp;(8)</div>
+    
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 106 &nbsp;·&nbsp; Sent 191
+                <span class="kw-pill">no assurance</span>
+            </div>
+            <div class="ctx-block">Sales of these products and services are particularly sensitive to the significant weighting of consumer demand to the year-end holiday season. In the G&NS segment, the successful introduction and penetration of gaming platforms, including streaming, is a significant factor driving sales and profita...</div>
+            <div class="flagged-high">However, there is no assurance that third-party software developers and publishers, major contributors to this effort, will continue to develop and release software.</div>
+            <div class="ctx-block">In addition, Sony believes that integrating its hardware, software, including AI, entertainment content and network services and minimizing their energy consumption, as well as investing in R&D to effect such integration, is essential in generating revenue growth and profitability. However, this str...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 120 &nbsp;·&nbsp; Sent 223
+                <span class="kw-pill">no assurance</span>
+            </div>
+            
+            <div class="flagged-high">Sony invests in programs to incentivize wholesalers, retailers, and other resellers and third-party distributors to position and promote Sony’s products, but there is no assurance that these programs will provide a significant return or incremental revenue by persuading consumers to buy Sony products instead of competitors’ products.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 145 &nbsp;·&nbsp; Sent 291
+                <span class="kw-pill">no assurance</span>
+            </div>
+            <div class="ctx-block">Additionally, global financial markets may experience significant levels of volatility and disruption, generally putting downward pressure on financial and other asset prices and impacting credit availability. Historically, Sony’s primary sources of funds have been cash flows from operations, the is...</div>
+            <div class="flagged-high">There can be no assurance that such sources will continue to be available on acceptable terms or be sufficient to meet Sony’s needs.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 181 &nbsp;·&nbsp; Sent 360
+                <span class="kw-pill">no assurance</span>
+            </div>
+            <div class="ctx-block">Sony believes, and maintains policies and procedures designed to ensure that, its transactions with Iran and elsewhere have been conducted in accordance with applicable economic sanctions laws and regulations and do not involve transactions likely to result in the imposition of sanctions or other pe...</div>
+            <div class="flagged-high">However, there can be no assurance that Sony’s policies and procedures will be effective, and if the relevant authorities were to impose penalties or sanctions against Sony, the impact of such sanctions could be material.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 16
+                <span class="kw-pill">restatement</span>
+            </div>
+            <div class="ctx-block">In 2022, the SEC adopted rules relating to the mandatory recovery of erroneously awarded incentive-based compensation received by certain current or former executive officers, and the NYSE has, in turn, adopted listing standards in connection with such rules. Accordingly, Sony Group Corporation’s Co...</div>
+            <div class="flagged-high">The Clawback Policy provides for the mandatory recovery of erroneously awarded incentive-based compensation received by each Executive Officer (as defined in the Clawback Policy) during the three-fiscal-year period prior to the date Sony Group Corporation is required to prepare an Accounting Restatement (as defined in the Clawback Policy), in accordance with the above rules and standards.</div>
+            <div class="ctx-block">The amount of erroneously awarded incentive compensation that the Executive Officers would be required to repay is the amount of incentive-based compensation paid to the Executive Officer that exceeds the amount the Executive Officer would have received had it been determined based on the restated a...</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 18
+                <span class="kw-pill">restatement</span>
+            </div>
+            <div class="ctx-block">The Clawback Policy provides for the mandatory recovery of erroneously awarded incentive-based compensation received by each Executive Officer (as defined in the Clawback Policy) during the three-fiscal-year period prior to the date Sony Group Corporation is required to prepare an Accounting Restate...</div>
+            <div class="flagged-high">The recovery of such compensation applies regardless of whether an Executive Officer engaged in misconduct or otherwise caused or contributed to the requirement of an accounting restatement.</div>
+            <div class="ctx-block">For further details and full text of the Clawback Policy, please refer to Exhibit 97.1 attached to this report.</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 202
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-high">Sony Group Corporation’s Audit Committee shall consist of at least three Directors.</div>
+            <div class="ctx-block">Under the Companies Act, a majority of its members shall be “outside” Directors, as defined under the Companies Act. In addition, pursuant to the Companies Act, no member of the Committee shall be a Director of the company or any of its subsidiaries who is engaged in the business operations of the c...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header high">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 307 &nbsp;·&nbsp; Sent 407
+                <span class="kw-pill">material weakness</span>
+            </div>
+            <div class="ctx-block">Such procedures included examining, on a test basis, evidence regarding the amounts and disclosures in the consolidated financial statements. Our audits also included evaluating the accounting principles used and significant estimates made by management, as well as evaluating the overall presentatio...</div>
+            <div class="flagged-high">Our audit of internal control over financial reporting included obtaining an understanding of internal control over financial reporting, assessing the risk that a material weakness exists, and testing and evaluating the design and operating effectiveness of internal control based on the assessed risk.</div>
+            <div class="ctx-block">Our audits also included performing such other procedures as we considered necessary in the circumstances. We believe that our audits provide a reasonable basis for our opinions.</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+    
+
+    
+    <div class="divider div-amber">Medium severity findings &nbsp;(8)</div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 16
+                <span class="kw-pill">clawback</span>
+            </div>
+            <div class="ctx-block">In 2022, the SEC adopted rules relating to the mandatory recovery of erroneously awarded incentive-based compensation received by certain current or former executive officers, and the NYSE has, in turn, adopted listing standards in connection with such rules. Accordingly, Sony Group Corporation’s Co...</div>
+            <div class="flagged-medium">The Clawback Policy provides for the mandatory recovery of erroneously awarded incentive-based compensation received by each Executive Officer (as defined in the Clawback Policy) during the three-fiscal-year period prior to the date Sony Group Corporation is required to prepare an Accounting Restatement (as defined in the Clawback Policy), in accordance with the above rules and standards.</div>
+            <div class="ctx-block">The amount of erroneously awarded incentive compensation that the Executive Officers would be required to repay is the amount of incentive-based compensation paid to the Executive Officer that exceeds the amount the Executive Officer would have received had it been determined based on the restated a...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 146 &nbsp;·&nbsp; Sent 202
+                <span class="kw-pill">succession plan</span>
+            </div>
+            
+            <div class="flagged-medium">The primary roles of the Nominating Committee are to: (a) determine the content of proposals regarding the appointment/dismissal of Directors to be submitted for approval at a General Meeting of Shareholders and (b) evaluate management succession plans, which the CEO develops, for the CEO and other executives designated by the Nominating Committee.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 185 &nbsp;·&nbsp; Sent 247
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-medium">Under the Companies Act, the Audit Committee shall consist of at least three Directors, the majority of whom shall be outside Directors.</div>
+            <div class="ctx-block">In addition, under the Board Charter, each member of the Audit Committee (“Audit Committee Member”) shall satisfy all of the following qualifications: (a) he/she shall not be a Director engaged in the business operations of Sony Group Corporation or any of its subsidiaries, a Corporate Executive Off...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 185 &nbsp;·&nbsp; Sent 248
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Under the Companies Act, the Audit Committee shall consist of at least three Directors, the majority of whom shall be outside Directors.</div>
+            <div class="flagged-medium">In addition, under the Board Charter, each member of the Audit Committee (“Audit Committee Member”) shall satisfy all of the following qualifications: (a) he/she shall not be a Director engaged in the business operations of Sony Group Corporation or any of its subsidiaries, a Corporate Executive Officer, an accounting counselor, a general manager or other employee of Sony and (b) he/she shall meet the independence requirements or such other equivalent requirements of the U.S.</div>
+            <div class="ctx-block">securities laws and regulations as may from time to time be applicable to Sony Group Corporation. The chair is to be selected from among the outside Directors.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+    
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 4 — REMAINING MEDIUM + LOW FINDINGS
+════════════════════════════════════════════ -->
+<div class="page">
+    
+    <div class="divider div-amber">Medium severity findings (continued)</div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 186 &nbsp;·&nbsp; Sent 253
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-medium">Moreover, at least one Audit Committee Member shall meet the audit committee financial expert requirements or such other equivalent requirements of the U.S.</div>
+            <div class="ctx-block">securities laws and regulations as may from time to time be applicable to Sony Group Corporation. The Board makes a determination on whether or not such Audit Committee Members meet these requirements.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 21 &nbsp;·&nbsp; Sent 23
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Consistent with the SEC rules regarding auditor independence, Sony Group Corporation’s Audit Committee is responsible for appointing, reviewing and setting compensation, retaining, and overseeing the work of Sony’s independent auditor, so that the auditor’s independence will not be impaired. The Aud...</div>
+            <div class="flagged-medium">The Audit Committee periodically reviews this policy with due regard for compliance with laws and regulations of host countries where Sony Group Corporation is listed.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 206
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">In addition, pursuant to the Companies Act, no member of the Committee shall be a Director of the company or any of its subsidiaries who is engaged in the business operations of the company or such subsidiary, as the case may be, or a corporate executive officer of the company or any of its subsidia...</div>
+            <div class="flagged-medium">securities laws and regulations, and requires at least one member to meet the audit committee financial expert requirements.</div>
+            <div class="ctx-block">As of the date of this report, all the members of Sony Group Corporation’s Audit Committee are also “independent” as defined in the NYSE Corporate Governance Standards, and one member of the Committee is qualified as an audit committee financial expert. It is expected that all the members of the Aud...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header medium">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 116 &nbsp;·&nbsp; Sent 144
+                <span class="kw-pill">conflicts of interest</span>
+            </div>
+            <div class="ctx-block">In addition, the Securities Listing Regulations of the TSE require Sony Group Corporation to make efforts to have at least one “Independent Director” on the Board of Directors.</div>
+            <div class="flagged-medium">“Independent Director” is defined in the Securities Listing Regulations of the TSE as an “outside” director who is unlikely to have conflicts of interest with shareholders.</div>
+            <div class="ctx-block">According to the guidelines of the TSE, if a person falls in any of the categories listed below, such person, in principle, will be considered to have a conflict of interest with shareholders of the listed company.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+    
+
+    <div class="divider div-green">Low severity findings &nbsp;(117)</div>
+    
+        <p class="low-note">Low severity flags are included for completeness. Standard boilerplate language — no immediate action required.</p>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 181 &nbsp;·&nbsp; Sent 360
+                <span class="kw-pill">sanctions</span>
+            </div>
+            <div class="ctx-block">Sony believes, and maintains policies and procedures designed to ensure that, its transactions with Iran and elsewhere have been conducted in accordance with applicable economic sanctions laws and regulations and do not involve transactions likely to result in the imposition of sanctions or other pe...</div>
+            <div class="flagged-low">However, there can be no assurance that Sony’s policies and procedures will be effective, and if the relevant authorities were to impose penalties or sanctions against Sony, the impact of such sanctions could be material.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 60 &nbsp;·&nbsp; Sent 115
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Item 16A.</div>
+            <div class="flagged-low">Audit Committee Financial Expert 
+    
+   
+ 115</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 64 &nbsp;·&nbsp; Sent 121
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Audit Committee’s Pre-Approval Policies and Procedures 
+    
+   
+ 116</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 65 &nbsp;·&nbsp; Sent 123
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Item 16D.</div>
+            <div class="flagged-low">Exemptions from the Listing Standards for Audit Committees 
+    
+   
+ 116</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 100 &nbsp;·&nbsp; Sent 179
+                <span class="kw-pill">strike</span>
+            </div>
+            <div class="ctx-block">Sony faces increasingly intense pricing pressure from competitors, retailer consolidation, new sales/distribution channels, and shorter product cycles in a variety of consumer product categories. In the G&NS, Music and Pictures segments, operating results can be impacted by worldwide consumer accept...</div>
+            <div class="flagged-low">For example, in the Pictures segment, as the number of theatrical releases increases with the resumption of production activities that had been paused due to the strikes by the Writers Guild of America (“WGA”) and the Screen Actors Guild - American Federation of Television and Radio Artists (“SAG-AFTRA”) in 2023, the theatrical release calendar of films by major studios became more crowded, increasing competition for available screen space and adversely affecting the operating results of the Pic...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 114 &nbsp;·&nbsp; Sent 208
+                <span class="kw-pill">key person</span>
+            </div>
+            
+            <div class="flagged-low">While Sony performs a comprehensive analysis and evaluation of merged or acquired organizations prior to their merger or acquisition from various perspectives such as technology, accounting, tax, finance, human resources (“HR”), and legal, Sony’s financial results may be adversely affected by factors including the significant cost of the acquisition and/or integration expenses, IT and information security risks introduced from newly merged or acquired organizations, failure to achieve initially ...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 148 &nbsp;·&nbsp; Sent 296
+                <span class="kw-pill">key person</span>
+            </div>
+            
+            <div class="flagged-low">In order to continue to create content, develop services, design, manufacture, market, and sell products, in increasingly competitive markets, Sony must attract, retain and maintain productive relations with key personnel, both internally and externally, who possess high levels of expertise and broad experience, including its executive team, other management professionals, creative talent, and hardware and software engineers.</div>
+            <div class="ctx-block">However, such key personnel are in high demand. In addition, business divestitures, restructuring or other transformation initiatives may lead to an unintended loss of experienced employees or know-how.</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 148 &nbsp;·&nbsp; Sent 297
+                <span class="kw-pill">key person</span>
+            </div>
+            <div class="ctx-block">In order to continue to create content, develop services, design, manufacture, market, and sell products, in increasingly competitive markets, Sony must attract, retain and maintain productive relations with key personnel, both internally and externally, who possess high levels of expertise and broa...</div>
+            <div class="flagged-low">However, such key personnel are in high demand.</div>
+            <div class="ctx-block">In addition, business divestitures, restructuring or other transformation initiatives may lead to an unintended loss of experienced employees or know-how. Actual or threatened work slowdowns or stoppages related to unionized workers, particularly in the entertainment field, could lead to delayed rel...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 148 &nbsp;·&nbsp; Sent 300
+                <span class="kw-pill">strike</span>
+            </div>
+            <div class="ctx-block">In addition, business divestitures, restructuring or other transformation initiatives may lead to an unintended loss of experienced employees or know-how. Actual or threatened work slowdowns or stoppages related to unionized workers, particularly in the entertainment field, could lead to delayed rel...</div>
+            <div class="flagged-low">For example, in the Pictures segment, WGA and SAG-AFTRA went on strike from May to September 2023 and from July to November 2023, respectively.</div>
+            <div class="ctx-block">These strikes resulted in adverse effects such as an impact on Sony’s ability to produce content which has led to release date changes for some theatrical releases in Motion Pictures and delays in deliveries of television series in Television Productions. Furthermore, in Japan, with a declining work...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 148 &nbsp;·&nbsp; Sent 301
+                <span class="kw-pill">strike</span>
+            </div>
+            <div class="ctx-block">Actual or threatened work slowdowns or stoppages related to unionized workers, particularly in the entertainment field, could lead to delayed releases or cost increases. For example, in the Pictures segment, WGA and SAG-AFTRA went on strike from May to September 2023 and from July to November 2023, ...</div>
+            <div class="flagged-low">These strikes resulted in adverse effects such as an impact on Sony’s ability to produce content which has led to release date changes for some theatrical releases in Motion Pictures and delays in deliveries of television series in Television Productions.</div>
+            <div class="ctx-block">Furthermore, in Japan, with a declining workforce due to the falling birthrate and aging population, intensifying competition among companies for specialized talent, and rising labor costs, it may become difficult to secure the necessary talent if Sony’s HR system is inadequate in its design and ope...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 164 &nbsp;·&nbsp; Sent 321
+                <span class="kw-pill">sanctions</span>
+            </div>
+            
+            <div class="flagged-low">Sony’s business activities are subject to various governmental regulations in different countries in which it operates, including regulations relating to: various business/investment approvals; trade affairs, including customs, import and export control; competition and antitrust; anti-bribery; advertising and promotion; intellectual property; broadcasting, consumer and business taxation; foreign exchange controls; economic sanctions; personal information protection; product safety; labor; human...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 180 &nbsp;·&nbsp; Sent 358
+                <span class="kw-pill">sanctions</span>
+            </div>
+            <div class="ctx-block">Sony is not aware of any other activity, transaction or dealing by Sony Group Corporation or any of its affiliates during the fiscal year ended March 31, 2025 that is disclosable in this report under Section 13(r) of the Exchange Act. As of the date of this report, Sony does not anticipate that any ...</div>
+            <div class="flagged-low">Nevertheless, Sony continues to monitor developments in this area as sanctions against Iran continue to evolve, and assess whether and to what extent such sanctions may affect Sony’s business activities, which Sony intends to conduct in accordance with applicable laws and regulations.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 181 &nbsp;·&nbsp; Sent 359
+                <span class="kw-pill">sanctions</span>
+            </div>
+            
+            <div class="flagged-low">Sony believes, and maintains policies and procedures designed to ensure that, its transactions with Iran and elsewhere have been conducted in accordance with applicable economic sanctions laws and regulations and do not involve transactions likely to result in the imposition of sanctions or other penalties on Sony.</div>
+            <div class="ctx-block">However, there can be no assurance that Sony’s policies and procedures will be effective, and if the relevant authorities were to impose penalties or sanctions against Sony, the impact of such sanctions could be material.</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 7A &nbsp;·&nbsp; Page 77 &nbsp;·&nbsp; Para 132 &nbsp;·&nbsp; Sent 287
+                <span class="kw-pill">legal proceedings</span>
+            </div>
+            <div class="ctx-block">Moreover, such disruptions and breaches may result in a diversion of management’s attention and resources. Further, it may result in adverse media coverage, which may harm Sony’s brand image and reputation.</div>
+            <div class="flagged-low">Sony may also be subject to legal claims or legal proceedings, including regulatory investigations and actions.</div>
+            <div class="ctx-block">Sony’s cyber insurance may not cover all expenses and losses and, accordingly, such breaches or other compromises of Sony’s information security or that of its third-party service providers or business partners may have an adverse impact on Sony’s operating results and financial condition.</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 7A &nbsp;·&nbsp; Page 77 &nbsp;·&nbsp; Para 134 &nbsp;·&nbsp; Sent 291
+                <span class="kw-pill">legal proceedings</span>
+            </div>
+            <div class="ctx-block">Sony faces the risk of litigation and regulatory actions in different countries in connection with its operations.</div>
+            <div class="flagged-low">Legal proceedings, including regulatory actions, may seek to recover very large indeterminate amounts or to limit Sony’s operations, and the possibility that they may arise and their magnitude may remain unknown for substantial periods of time.</div>
+            <div class="ctx-block">For example, legal proceedings, including regulatory actions, may result from antitrust scrutiny of market practices for anti-competit</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 7A &nbsp;·&nbsp; Page 77 &nbsp;·&nbsp; Para 134 &nbsp;·&nbsp; Sent 292
+                <span class="kw-pill">legal proceedings</span>
+            </div>
+            <div class="ctx-block">Sony faces the risk of litigation and regulatory actions in different countries in connection with its operations. Legal proceedings, including regulatory actions, may seek to recover very large indeterminate amounts or to limit Sony’s operations, and the possibility that they may arise and their ma...</div>
+            <div class="flagged-low">For example, legal proceedings, including regulatory actions, may result from antitrust scrutiny of market practices for anti-competit</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 37 &nbsp;·&nbsp; Sent 56
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">(3) Details of Actions Taken by the Audit Committee</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 38 &nbsp;·&nbsp; Sent 57
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">During the fiscal year ended March 31, 2025, the Audit Committee convened 6 times.</div>
+            <div class="ctx-block">The attendance records of respective Directors are as follows.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 44 &nbsp;·&nbsp; Sent 66
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">*2 Because Shingo Konomoto was newly appointed as a member of the Audit Committee pursuant to the resolution at the Board held on June 25, 2024, the numbers of his Meeting Records and Attendance Records differ from those of other members of the Audit Committee.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 45 &nbsp;·&nbsp; Sent 68
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Note: Ms.</div>
+            <div class="flagged-low">Toshiko Oka, who retired as a member of the Audit Committee in June 2024, attended the two Audit Committee meetings held prior to her retirement.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 46 &nbsp;·&nbsp; Sent 69
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Specific considerations by the Audit Committee include review of audit plans in three-way audits, identification and audit of priority audit items for each fiscal year, review of financial results and disclosure documents related to financial results, review of development and operation of internal control systems, audit of financial reports and SOX 404-related activities, audit of internal audit activities, review of the content and process for determining the compensation of the independent au...</div>
+            <div class="ctx-block">In addition to these, the Audit Committee held interviews with Senior Executives and other officers to receive reports on matters such as the recognition of issues and the status of risk management in the respective areas of responsibility of each business and headquarter function, and engaged in di...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 46 &nbsp;·&nbsp; Sent 70
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Specific considerations by the Audit Committee include review of audit plans in three-way audits, identification and audit of priority audit items for each fiscal year, review of financial results and disclosure documents related to financial results, review of development and operation of internal ...</div>
+            <div class="flagged-low">In addition to these, the Audit Committee held interviews with Senior Executives and other officers to receive reports on matters such as the recognition of issues and the status of risk management in the respective areas of responsibility of each business and headquarter function, and engaged in dialogue.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 50 &nbsp;·&nbsp; Sent 75
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">The Audit Committee received reports regarding the latest updates in Japan and other countries regarding the disclosure and assurance of non-financial information, such as climate change, from the internal control department, and confirmed that the steps regarding sustainability issues were steadily taken amid changing environments.</div>
+            <div class="ctx-block">The Audit Committee also discussed with the independent auditors relevant disclosure and assurance standard trends.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 50 &nbsp;·&nbsp; Sent 76
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">The Audit Committee received reports regarding the latest updates in Japan and other countries regarding the disclosure and assurance of non-financial information, such as climate change, from the internal control department, and confirmed that the steps regarding sustainability issues were steadily...</div>
+            <div class="flagged-low">The Audit Committee also discussed with the independent auditors relevant disclosure and assurance standard trends.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 55 &nbsp;·&nbsp; Sent 81
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">In addition to confirming during the above-mentioned interviews with Senior Executives and other officers regarding Sony’s overall risk management, including Sony’s internal structure and challenges related to information security and anti-fraud, the Audit Committee received the reports from the internal control department and discussed ways to enhance continuous responsiveness.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 58 &nbsp;·&nbsp; Sent 84
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">The Audit Committee received the reports regarding the audit activities of certain subsidiaries from the heads of the internal audit departments of each business segment and held discussions on them.</div>
+            <div class="ctx-block">Specifically, the Committee discussed with them the audit status and challenges of recently acquired subsidiaries. The Committee also had discussions with SFGI regarding preparations for the Partial Spin-off of the Financial Services business, the strengthening of its governance system and mid- to l...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 283 &nbsp;·&nbsp; Sent 392
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">General Meeting of Shareholders, then the Distributable Amount must be adjusted to take into account the amount of profit or loss, and the amount of consideration for any of the treasury stock disposed of by Sony Group Corporation, during the period in respect of which such interim financial stateme...</div>
+            <div class="flagged-low">Interim financial statements so prepared by Sony Group Corporation must be audited by the Audit Committee and the independent auditor, as required by the Companies Act and in accordance with the details prescribed by ordinances of the Ministry of Justice.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 8 &nbsp;·&nbsp; Sent 13
+                <span class="kw-pill">clawback</span>
+            </div>
+            
+            <div class="flagged-low">(Reference: Clawback Policy)</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 15
+                <span class="kw-pill">clawback</span>
+            </div>
+            <div class="ctx-block">In 2022, the SEC adopted rules relating to the mandatory recovery of erroneously awarded incentive-based compensation received by certain current or former executive officers, and the NYSE has, in turn, adopted listing standards in connection with such rules.</div>
+            <div class="flagged-low">Accordingly, Sony Group Corporation’s Compensation Committee adopted a clawback policy, with an effective date of October 2, 2023 (the “Clawback Policy”).</div>
+            <div class="ctx-block">The Clawback Policy provides for the mandatory recovery of erroneously awarded incentive-based compensation received by each Executive Officer (as defined in the Clawback Policy) during the three-fiscal-year period prior to the date Sony Group Corporation is required to prepare an Accounting Restate...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 9 &nbsp;·&nbsp; Sent 19
+                <span class="kw-pill">clawback</span>
+            </div>
+            <div class="ctx-block">The amount of erroneously awarded incentive compensation that the Executive Officers would be required to repay is the amount of incentive-based compensation paid to the Executive Officer that exceeds the amount the Executive Officer would have received had it been determined based on the restated a...</div>
+            <div class="flagged-low">For further details and full text of the Clawback Policy, please refer to Exhibit 97.1 attached to this report.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 41 &nbsp;·&nbsp; Sent 60
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Sony Group Corporation continuously strives to strengthen its corporate governance system based on the understanding that corporate governance is an essential basis to promote our management in order to fulfill the company’s corporate social responsibility and increase corporate value over the mid- ...</div>
+            <div class="flagged-low">To operate Sony effectively, Sony Group Corporation continues to approach its corporate governance through two basic precepts: (a) the Board of Directors (the “Board”), a majority of which is comprised of independent outside Directors, focuses on effective oversight of management’s operation of the business and maintains a sound and transparent governance framework by utilizing the Nominating Committee, the Audit Committee and the Compensation Committee; and (b) the Board determines Sony’s funda...</div>
+            <div class="ctx-block">In furtherance of these efforts, Sony Group Corporation has adopted a “Company with Three Committees” corporate governance system under the Companies Act of Japan ( Kaishaho ) and related regulations (collectively the “Companies Act”). Under this system, Sony Group Corporation has introduced its own...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 42 &nbsp;·&nbsp; Sent 64
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Sony Group Corporation is governed by the Board, the members of which are elected at the Ordinary General Meeting of Shareholders.</div>
+            <div class="flagged-low">Under the Companies Act, a “Company with Three Committees” is required to have three committees: a Nominating Committee, an Audit Committee and a Compensation Committee, each consisting of Directors appointed by the Board.</div>
+            <div class="ctx-block">The Companies Act also requires the Board to appoint Corporate Executive Officers ( Shikko-yaku ), who make decisions regarding the execution of Sony’s business activities within the scope of the authority delegated to them by the Board. Sony Group Corporation has appointed its Chief Executive Offic...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 107 &nbsp;·&nbsp; Sent 154
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Considering these expectations, the policy and procedures on the election of Director candidates, including independent outside Director candidates, are set forth as described above. As of the date of this report, the Board has 10 Directors, eight of whom are outside Directors.</div>
+            <div class="flagged-low">The Chair and Vice Chair of the Board, as well as all members of the Nominating Committee, the Compensation Committee and the Audit Committee are outside Directors.</div>
+            <div class="ctx-block">After the closing of the Ordinary General Meeting of Shareholders to be held on June 24, 2025, it is expected that the Board will have 11 Directors, nine of whom will be outside Directors, that the Chair of the Board will be an outside Director; and that all members of the Nominating Committee, the ...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 107 &nbsp;·&nbsp; Sent 155
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">As of the date of this report, the Board has 10 Directors, eight of whom are outside Directors. The Chair and Vice Chair of the Board, as well as all members of the Nominating Committee, the Compensation Committee and the Audit Committee are outside Directors.</div>
+            <div class="flagged-low">After the closing of the Ordinary General Meeting of Shareholders to be held on June 24, 2025, it is expected that the Board will have 11 Directors, nine of whom will be outside Directors, that the Chair of the Board will be an outside Director; and that all members of the Nominating Committee, the Compensation Committee and the Audit Committee will be outside Directors.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 150 &nbsp;·&nbsp; Sent 209
+                <span class="kw-pill">succession plan</span>
+            </div>
+            
+            <div class="flagged-low">(4) Management Succession Plans</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 151 &nbsp;·&nbsp; Sent 210
+                <span class="kw-pill">succession plan</span>
+            </div>
+            
+            <div class="flagged-low">The Nominating Committee evaluates the succession plans, and the implementation of such plans, for the CEO and other executives designated by the Nominating Committee, and reports the results of its evaluation to the Board, as appropriate.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 211
+                <span class="kw-pill">succession plan</span>
+            </div>
+            
+            <div class="flagged-low">Evaluations are conducted by having the CEO periodically submit draft succession plans to the Nominating Committee, which it reviews.</div>
+            <div class="ctx-block">As a part of such review, the Nominating Committee considers the development or promotion of the next generation of management and evaluates whether the succession plans have been prepared in a reasonable manner in light of Sony’s purpose to create sustainable social value and to enhance corporate v...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 212
+                <span class="kw-pill">succession plan</span>
+            </div>
+            <div class="ctx-block">Evaluations are conducted by having the CEO periodically submit draft succession plans to the Nominating Committee, which it reviews.</div>
+            <div class="flagged-low">As a part of such review, the Nominating Committee considers the development or promotion of the next generation of management and evaluates whether the succession plans have been prepared in a reasonable manner in light of Sony’s purpose to create sustainable social value and to enhance corporate value over the mid- to long-term.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 155 &nbsp;·&nbsp; Sent 215
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Audit Committee</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 159 &nbsp;·&nbsp; Sent 220
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Chair of the Audit Committee</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 162 &nbsp;·&nbsp; Sent 223
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Audit Committee Member</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 167 &nbsp;·&nbsp; Sent 228
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">* It is expected that members of the Audit Committee will be appointed as follows at a meeting of the Board immediately following the closing of the Ordinary General Meeting of Shareholders to be held on June 24, 2025.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 183 &nbsp;·&nbsp; Sent 245
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">The primary roles of the Audit Committee are to: (a) monitor the performance of duties by Directors and Corporate Executive Officers and (b) oversee and evaluate the independent auditor.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 184 &nbsp;·&nbsp; Sent 246
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">(3) Policy Regarding Composition of the Audit Committee</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 185 &nbsp;·&nbsp; Sent 251
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">securities laws and regulations as may from time to time be applicable to Sony Group Corporation. The chair is to be selected from among the outside Directors.</div>
+            <div class="flagged-low">The Audit Committee Members shall be selected from among the persons who possess appropriate experience and talent as well as the necessary finance, accounting and legal knowledge to serve on the Audit Committee.</div>
+            <div class="ctx-block">In determining whether to appoint or remove the Audit Committee Member, continuity of the Audit Committee shall be duly taken into account.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 185 &nbsp;·&nbsp; Sent 252
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">The chair is to be selected from among the outside Directors. The Audit Committee Members shall be selected from among the persons who possess appropriate experience and talent as well as the necessary finance, accounting and legal knowledge to serve on the Audit Committee.</div>
+            <div class="flagged-low">In determining whether to appoint or remove the Audit Committee Member, continuity of the Audit Committee shall be duly taken into account.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 186 &nbsp;·&nbsp; Sent 255
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Moreover, at least one Audit Committee Member shall meet the audit committee financial expert requirements or such other equivalent requirements of the U.S. securities laws and regulations as may from time to time be applicable to Sony Group Corporation.</div>
+            <div class="flagged-low">The Board makes a determination on whether or not such Audit Committee Members meet these requirements.</div>
+            <div class="ctx-block">As of the date of this report, Keiko Kishigami is an “audit committee financial expert” within the meaning of Item 16A of Form 20-F under the Exchange Act, as</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 186 &nbsp;·&nbsp; Sent 256
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">securities laws and regulations as may from time to time be applicable to Sony Group Corporation. The Board makes a determination on whether or not such Audit Committee Members meet these requirements.</div>
+            <div class="flagged-low">As of the date of this report, Keiko Kishigami is an “audit committee financial expert” within the meaning of Item 16A of Form 20-F under the Exchange Act, as</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 189 &nbsp;·&nbsp; Sent 260
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">amended.</div>
+            <div class="flagged-low">After the resolution of the Board immediately following the closing of the Ordinary General Meeting of Shareholders to be held on June 24, 2025, the Audit Committee is expected to consist of four outside Directors, two of whom (Keiko Kishigami and Ms.</div>
+            <div class="ctx-block">Yoriko Goto) are expected to be “audit committee financial experts.” Both Kishigami Keiko and Ms. Yoriko Goto have auditing experience across various companies in Japan and overseas, as well as expertise on internal controls and considerable knowledge of finance and accounting.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 189 &nbsp;·&nbsp; Sent 261
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">amended. After the resolution of the Board immediately following the closing of the Ordinary General Meeting of Shareholders to be held on June 24, 2025, the Audit Committee is expected to consist of four outside Directors, two of whom (Keiko Kishigami and Ms.</div>
+            <div class="flagged-low">Yoriko Goto) are expected to be “audit committee financial experts.” Both Kishigami Keiko and Ms.</div>
+            <div class="ctx-block">Yoriko Goto have auditing experience across various companies in Japan and overseas, as well as expertise on internal controls and considerable knowledge of finance and accounting.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 191 &nbsp;·&nbsp; Sent 264
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">With respect to the candidates for independent auditor nominated by the CEO and other Corporate Executive Officers, the Audit Committee evaluates the nomination, prior to making a decision on the candidates.</div>
+            <div class="ctx-block">The Audit Committee continues to evaluate the independence, the qualification and the reasonableness as well as the performance of the independent auditor so appointed.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 191 &nbsp;·&nbsp; Sent 265
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">With respect to the candidates for independent auditor nominated by the CEO and other Corporate Executive Officers, the Audit Committee evaluates the nomination, prior to making a decision on the candidates.</div>
+            <div class="flagged-low">The Audit Committee continues to evaluate the independence, the qualification and the reasonableness as well as the performance of the independent auditor so appointed.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 250 &nbsp;·&nbsp; Sent 343
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">(4) Audit Committee Aide</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 251 &nbsp;·&nbsp; Sent 344
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">With the approval of the Board and with the Audit Committee’s consent, the company has established the Audit Committee Aide to support the activities of the Audit Committee.</div>
+            <div class="ctx-block">The Audit Committee Aide does not concurrently hold positions related to the business operations of Sony and, upon instruction by each Audit Committee member, conducts investigations into and analyzes auditing matters and engages in physical inspections or visiting audits either by him/herself or by...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 251 &nbsp;·&nbsp; Sent 345
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">With the approval of the Board and with the Audit Committee’s consent, the company has established the Audit Committee Aide to support the activities of the Audit Committee.</div>
+            <div class="flagged-low">The Audit Committee Aide does not concurrently hold positions related to the business operations of Sony and, upon instruction by each Audit Committee member, conducts investigations into and analyzes auditing matters and engages in physical inspections or visiting audits either by him/herself or by cooperating with relevant departments in order to support the Audit Committee.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 20 &nbsp;·&nbsp; Sent 20
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Audit Committee’s Pre-Approval Policies and Procedures</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 21 &nbsp;·&nbsp; Sent 21
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Consistent with the SEC rules regarding auditor independence, Sony Group Corporation’s Audit Committee is responsible for appointing, reviewing and setting compensation, retaining, and overseeing the work of Sony’s independent auditor, so that the auditor’s independence will not be impaired.</div>
+            <div class="ctx-block">The Audit Committee established a formal policy requiring pre-approval of all audit and permissible non-audit services provided by the independent auditor to Sony Group Corporation or any of its subsidiaries. The Audit Committee periodically reviews this policy with due regard for compliance with la...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 21 &nbsp;·&nbsp; Sent 22
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Consistent with the SEC rules regarding auditor independence, Sony Group Corporation’s Audit Committee is responsible for appointing, reviewing and setting compensation, retaining, and overseeing the work of Sony’s independent auditor, so that the auditor’s independence will not be impaired.</div>
+            <div class="flagged-low">The Audit Committee established a formal policy requiring pre-approval of all audit and permissible non-audit services provided by the independent auditor to Sony Group Corporation or any of its subsidiaries.</div>
+            <div class="ctx-block">The Audit Committee periodically reviews this policy with due regard for compliance with laws and regulations of host countries where Sony Group Corporation is listed.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 22 &nbsp;·&nbsp; Sent 24
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Prior to the engagement of the independent auditor for the following fiscal year’s audit, management in charge of accounting or other relevant areas (“Accounting Management”) submits an application form to the Audit Committee for comprehensive pre-approval of all recurring services expected to be rendered during that year, other than services that are classified as “Tax” related services (“Tax Services”).</div>
+            <div class="ctx-block">In order to obtain comprehensive pre-approval, Accounting Management must designate in which of two categories (Audit and Non-Audit) the services will be classified as well as fees expected, both for each category in the aggregate and for each individual service, and detailed back-up information reg...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 22 &nbsp;·&nbsp; Sent 25
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Prior to the engagement of the independent auditor for the following fiscal year’s audit, management in charge of accounting or other relevant areas (“Accounting Management”) submits an application form to the Audit Committee for comprehensive pre-approval of all recurring services expected to be re...</div>
+            <div class="flagged-low">In order to obtain comprehensive pre-approval, Accounting Management must designate in which of two categories (Audit and Non-Audit) the services will be classified as well as fees expected, both for each category in the aggregate and for each individual service, and detailed back-up information regarding each service to the extent possible to ensure that the Audit Committee knows precisely what particular service and the expected fees it is being asked to pre-approve and that the scope of any s...</div>
+            <div class="ctx-block">Any additional services not within the scope of comprehensive pre-approval and Tax Services require the Audit Committee’s separate pre-approval on an individual basis. The Audit Committee approves, if necessary, any changes in terms, conditions and fees resulting from changes in the scope of service...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 22 &nbsp;·&nbsp; Sent 26
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Prior to the engagement of the independent auditor for the following fiscal year’s audit, management in charge of accounting or other relevant areas (“Accounting Management”) submits an application form to the Audit Committee for comprehensive pre-approval of all recurring services expected to be re...</div>
+            <div class="flagged-low">Any additional services not within the scope of comprehensive pre-approval and Tax Services require the Audit Committee’s separate pre-approval on an individual basis.</div>
+            <div class="ctx-block">The Audit Committee approves, if necessary, any changes in terms, conditions and fees resulting from changes in the scope of services to be provided or from other circumstances, with respect to both services that are subject to comprehensive and individual pre-approval. The Audit Committee or its de...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 22 &nbsp;·&nbsp; Sent 27
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">In order to obtain comprehensive pre-approval, Accounting Management must designate in which of two categories (Audit and Non-Audit) the services will be classified as well as fees expected, both for each category in the aggregate and for each individual service, and detailed back-up information reg...</div>
+            <div class="flagged-low">The Audit Committee approves, if necessary, any changes in terms, conditions and fees resulting from changes in the scope of services to be provided or from other circumstances, with respect to both services that are subject to comprehensive and individual pre-approval.</div>
+            <div class="ctx-block">The Audit Committee or its designee establishes procedures to assure that the independent auditor is aware in a timely manner of the services that have been pre-approved.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 22 &nbsp;·&nbsp; Sent 28
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Any additional services not within the scope of comprehensive pre-approval and Tax Services require the Audit Committee’s separate pre-approval on an individual basis. The Audit Committee approves, if necessary, any changes in terms, conditions and fees resulting from changes in the scope of service...</div>
+            <div class="flagged-low">The Audit Committee or its designee establishes procedures to assure that the independent auditor is aware in a timely manner of the services that have been pre-approved.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 24 &nbsp;·&nbsp; Sent 30
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Exemptions from the Listing Standards for Audit Committees</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 97 &nbsp;·&nbsp; Sent 114
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">The Companies Act does not require Sony Group Corporation to have a majority of “independent” (in the meaning given by the NYSE Corporate Governance Standards) directors on its board; rather, it requires Sony Group Corporation to have a majority of “outside” directors (the definition of the term “outside” director is summarized below) on each of three statutory committees (the Nominating Committee, the Audit Committee and the Compensation Committee).</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 151 &nbsp;·&nbsp; Sent 197
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">Audit Committee.</div>
+            <div class="ctx-block">An audit committee satisfying the independence and other requirements of Rule 10A-3 under the Exchange Act is required. The committee must have at least three members.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 151 &nbsp;·&nbsp; Sent 198
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Audit Committee.</div>
+            <div class="flagged-low">An audit committee satisfying the independence and other requirements of Rule 10A-3 under the Exchange Act is required.</div>
+            <div class="ctx-block">The committee must have at least three members. All members must be independent.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 205
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Under the Companies Act, a majority of its members shall be “outside” Directors, as defined under the Companies Act. In addition, pursuant to the Companies Act, no member of the Committee shall be a Director of the company or any of its subsidiaries who is engaged in the business operations of the c...</div>
+            <div class="flagged-low">Sony Group Corporation’s Board Charter also requires each member of the Audit Committee to meet the independence requirements of the applicable U.S.</div>
+            <div class="ctx-block">securities laws and regulations, and requires at least one member to meet the audit committee financial expert requirements. As of the date of this report, all the members of Sony Group Corporation’s Audit Committee are also “independent” as defined in the NYSE Corporate Governance Standards, and on...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 207
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Sony Group Corporation’s Board Charter also requires each member of the Audit Committee to meet the independence requirements of the applicable U.S. securities laws and regulations, and requires at least one member to meet the audit committee financial expert requirements.</div>
+            <div class="flagged-low">As of the date of this report, all the members of Sony Group Corporation’s Audit Committee are also “independent” as defined in the NYSE Corporate Governance Standards, and one member of the Committee is qualified as an audit committee financial expert.</div>
+            <div class="ctx-block">It is expected that all the members of the Audit Committee will be determined to be “independent” as defined in the NYSE Corporate Governance Standards, and two members of the Committee will be determined to qualify as audit committee financial experts, at the meeting of the Board of Directors immed...</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 152 &nbsp;·&nbsp; Sent 208
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">securities laws and regulations, and requires at least one member to meet the audit committee financial expert requirements. As of the date of this report, all the members of Sony Group Corporation’s Audit Committee are also “independent” as defined in the NYSE Corporate Governance Standards, and on...</div>
+            <div class="flagged-low">It is expected that all the members of the Audit Committee will be determined to be “independent” as defined in the NYSE Corporate Governance Standards, and two members of the Committee will be determined to qualify as audit committee financial experts, at the meeting of the Board of Directors immediately following the closing of the Ordinary General Meeting of Shareholders on June 24, 2025.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 175 &nbsp;·&nbsp; Sent 237
+                <span class="kw-pill">insider trading</span>
+            </div>
+            
+            <div class="flagged-low">Insider Trading Policies</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 176 &nbsp;·&nbsp; Sent 238
+                <span class="kw-pill">insider trading</span>
+            </div>
+            
+            <div class="flagged-low">Sony has adopted insider trading policies and procedures governing the purchase, sale, and other dispositions of its securities by directors, senior management, and employees that are reasonably designed to promote compliance with applicable insider trading laws, rules and regulations, and any listing standards applicable to Sony Group Corporation.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 199 &nbsp;·&nbsp; Sent 282
+                <span class="kw-pill">audit committee</span>
+            </div>
+            <div class="ctx-block">Joseph A.</div>
+            <div class="flagged-low">Kraft Jr., outside Director, serves simultaneously as the Chair of the Audit Committee.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 229 &nbsp;·&nbsp; Sent 320
+                <span class="kw-pill">insider trading</span>
+            </div>
+            
+            <div class="flagged-low">Global Policy on Insider Trading Prevention, incorporated by reference to Exhibit 11.1 to Sony’s annual report on Form 20-F for the fiscal year ended March 31, 2024 (Commission file number 001-06439) filed on June 25, 2024</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 315 &nbsp;·&nbsp; Sent 419
+                <span class="kw-pill">audit committee</span>
+            </div>
+            
+            <div class="flagged-low">The critical audit matter communicated below is a matter arising from the current period audit of the consolidated financial statements that was communicated or required to be communicated to the audit committee and that (i) relates to accounts or disclosures that are material to the consolidated fina</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 21 &nbsp;·&nbsp; Sent 41
+                <span class="kw-pill">related party transaction</span>
+            </div>
+            <div class="ctx-block">Item 7.</div>
+            <div class="flagged-low">Major Shareholders and Related Party Transactions 
+    
+   
+ 93</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 23 &nbsp;·&nbsp; Sent 45
+                <span class="kw-pill">related party transaction</span>
+            </div>
+            <div class="ctx-block">B.</div>
+            <div class="flagged-low">Related Party Transactions 
+    
+   
+ 93</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 27 &nbsp;·&nbsp; Sent 52
+                <span class="kw-pill">legal proceedings</span>
+            </div>
+            
+            <div class="flagged-low">Legal Proceedings 
+    
+   
+ 94</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 35 &nbsp;·&nbsp; Sent 67
+                <span class="kw-pill">dilution</span>
+            </div>
+            <div class="ctx-block">E.</div>
+            <div class="flagged-low">Dilution 
+    
+   
+ 95</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language indicates potential stress on the company's financial position or ability to meet obligations. Cross-check against liquidity ratios and debt maturity schedules.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 56 &nbsp;·&nbsp; Sent 107
+                <span class="kw-pill">default</span>
+            </div>
+            <div class="ctx-block">Item 13.</div>
+            <div class="flagged-low">Defaults, Dividend Arrearages and Delinquencies 
+    
+   
+ 114</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language indicates potential stress on the company's financial position or ability to meet obligations. Cross-check against liquidity ratios and debt maturity schedules.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 71 &nbsp;·&nbsp; Sent 135
+                <span class="kw-pill">insider trading</span>
+            </div>
+            <div class="ctx-block">Item 16J.</div>
+            <div class="flagged-low">Insider Trading Policies 
+    
+   
+ 125</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 100 &nbsp;·&nbsp; Sent 177
+                <span class="kw-pill">pricing pressure</span>
+            </div>
+            <div class="ctx-block">Moreover, even for those products where Sony believes it has a strong competitive advantage, such as image sensors, it is possible that its competitors’ technological capabilities will accelerate such that Sony would be unable to maintain its advantageous market position. In terms of consumer electr...</div>
+            <div class="flagged-low">Sony faces increasingly intense pricing pressure from competitors, retailer consolidation, new sales/distribution channels, and shorter product cycles in a variety of consumer product categories.</div>
+            <div class="ctx-block">In the G&NS, Music and Pictures segments, operating results can be impacted by worldwide consumer acceptance of their products, which is difficult to predict, and by alternative forms of entertainment and leisure activities available to consumers, as well as by competing products released or sold at...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 106 &nbsp;·&nbsp; Sent 193
+                <span class="kw-pill">AML</span>
+            </div>
+            <div class="ctx-block">However, there is no assurance that third-party software developers and publishers, major contributors to this effort, will continue to develop and release software. In addition, Sony believes that integrating its hardware, software, including AI, entertainment content and network services and minim...</div>
+            <div class="flagged-low">However, this strategy depends on its ability to further develop AI and network services technologies, coordinate and prioritize strategic and operational issues among Sony’s various business units and sales channels, continually introduce enhanced, energy efficient and competitively priced hardware that is seamlessly connected to energy efficient network platforms with user interfaces that are innovative and attractive to consumers and also standardize technological and interface specifications...</div>
+            <div class="ctx-block">In addition, the G&NS, Music and Pictures segments must invest substantial amounts, which may include significant upfront investments, in internally developed software titles, artist advances, music catalogs, motion picture productions, television productions and broadcast programming before knowing...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 110 &nbsp;·&nbsp; Sent 201
+                <span class="kw-pill">regulatory approval</span>
+            </div>
+            
+            <div class="flagged-low">In some cases, the completion of mergers and acquisitions is subject to certain closing conditions, including regulatory approvals.</div>
+            <div class="ctx-block">As a result of anti-trust laws and regulations and anti-trust regulatory authorities becoming stricter, regulatory reviews following the signing of a definitive agreement may take longer than expected, or Sony may fail to obtain regulatory approvals. Also, closing conditions for mergers and acquisit...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 110 &nbsp;·&nbsp; Sent 202
+                <span class="kw-pill">regulatory approval</span>
+            </div>
+            <div class="ctx-block">In some cases, the completion of mergers and acquisitions is subject to certain closing conditions, including regulatory approvals.</div>
+            <div class="flagged-low">As a result of anti-trust laws and regulations and anti-trust regulatory authorities becoming stricter, regulatory reviews following the signing of a definitive agreement may take longer than expected, or Sony may fail to obtain regulatory approvals.</div>
+            <div class="ctx-block">Also, closing conditions for mergers and acquisitions, which are set forth in definitive agreements, may not be satisfied due to unanticipated changes in the strategies or financial</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 115 &nbsp;·&nbsp; Sent 209
+                <span class="kw-pill">conflicts of interest</span>
+            </div>
+            
+            <div class="flagged-low">When establishing joint ventures and strategic partnerships, Sony’s financial and operating results may be adversely affected by strategic or cultural differences with partners, conflicts of interest, failure to achieve synergies, additional funding or debt guarantees required to maintain the joint venture or partnership, requirements to buy out a joint venture partner, sell its shares or dissolve a partnership, insufficient management control including control over cash flow, loss of proprietar...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 116 &nbsp;·&nbsp; Sent 211
+                <span class="kw-pill">may not be able</span>
+            </div>
+            <div class="ctx-block">Sony invests heavily in production facilities and equipment, including fabrication facilities used to make image sensors for smartphones and other products.</div>
+            <div class="flagged-low">Sony may not be able to execute these capital expenditures as planned or recover these capital expenditures in part or full or in the planned timeframe due to the competitive environment, lower-than-expected consumer demand, changes in the financial condition or business decisions of Sony’s major customers, or delays in the procurement of production facilities and equipment.</div>
+            <div class="ctx-block">Sony invested 339.6 billion yen and 227.4 billion yen of capital in the fiscal years ended March 31, 2024 and 2025, respectively, mainly for the purpose of increasing image sensor production capacity.</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 125 &nbsp;·&nbsp; Sent 230
+                <span class="kw-pill">sanctions</span>
+            </div>
+            
+            <div class="flagged-low">As a global company, Sony is subject to the laws and regulations of many countries throughout the world that affect its business operations in a number of areas, including advertising, promotions, consumer protection, import and export requirements, anti-corruption, anti-trust, environmental protection (including decarbonizing regulations in connection with actions against climate change and regulations on the use and/or spillage of hazardous substances such as specific organic fluorine compound...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 125 &nbsp;·&nbsp; Sent 230
+                <span class="kw-pill">product liability</span>
+            </div>
+            
+            <div class="flagged-low">As a global company, Sony is subject to the laws and regulations of many countries throughout the world that affect its business operations in a number of areas, including advertising, promotions, consumer protection, import and export requirements, anti-corruption, anti-trust, environmental protection (including decarbonizing regulations in connection with actions against climate change and regulations on the use and/or spillage of hazardous substances such as specific organic fluorine compound...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 126 &nbsp;·&nbsp; Sent 234
+                <span class="kw-pill">export control</span>
+            </div>
+            <div class="ctx-block">These laws and regulations continue to develop and may be inconsistent from jurisdiction to jurisdiction, further increasing the cost of compliance and doing business. Any such developments could occur frequently and without warning and could make Sony’s products or services less attractive to its c...</div>
+            <div class="flagged-low">For example, imposition of restrictive trade measures such as tariffs and export controls in the United States and elsewhere, as well as retaliatory actions against such measures, could result in increased customs duties applicable to Sony’s products or increased costs for procuring parts and components, and could limit or prohibit the sales of Sony’s products and services to certain of its current or potential customers, which may adversely affect Sony’s operating results and financial conditio...</div>
+            <div class="ctx-block">In addition, changes in laws or regulations or the judicial interpretation thereof that Sony relies on or Sony is subject to in conducting its operations, including online operations, as well as Sony’s failure to anticipate such changes, may subject Sony to greater risk of liability, increase the co...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 126 &nbsp;·&nbsp; Sent 234
+                <span class="kw-pill">tariff</span>
+            </div>
+            <div class="ctx-block">These laws and regulations continue to develop and may be inconsistent from jurisdiction to jurisdiction, further increasing the cost of compliance and doing business. Any such developments could occur frequently and without warning and could make Sony’s products or services less attractive to its c...</div>
+            <div class="flagged-low">For example, imposition of restrictive trade measures such as tariffs and export controls in the United States and elsewhere, as well as retaliatory actions against such measures, could result in increased customs duties applicable to Sony’s products or increased costs for procuring parts and components, and could limit or prohibit the sales of Sony’s products and services to certain of its current or potential customers, which may adversely affect Sony’s operating results and financial conditio...</div>
+            <div class="ctx-block">In addition, changes in laws or regulations or the judicial interpretation thereof that Sony relies on or Sony is subject to in conducting its operations, including online operations, as well as Sony’s failure to anticipate such changes, may subject Sony to greater risk of liability, increase the co...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 127 &nbsp;·&nbsp; Sent 238
+                <span class="kw-pill">reputational damage</span>
+            </div>
+            
+            <div class="flagged-low">Violation of applicable laws or regulations by Sony, its officers or employees, third-party suppliers, business partners or agents may subject Sony to monetary fines, penalties, legal judgments, restrictions on business operations and/or reputational damage.</div>
+            <div class="ctx-block">Additionally, there is a growing global focus by regulators and external stakeholders on sustainability efforts, including those relating to climate change and respect for human rights in supply chains, as well as increasing regulatory obligations of public disclosures regarding these matters. For e...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 127 &nbsp;·&nbsp; Sent 242
+                <span class="kw-pill">non-compliance</span>
+            </div>
+            <div class="ctx-block">For example, there is increased attention on labor practices, including work environments at electronic component and product manufacturers and original equipment manufacturers/original design manufacturers (OEM/ODM) operating in Asia. Increased regulation or public pressure in this area could cause...</div>
+            <div class="flagged-low">A finding of non-compliance, or the perception that Sony has not responded appropriately to growing external stakeholder concern for such issues, whether or not Sony is legally required to do so, may adversely affect Sony’s reputation, operating results and financial condition.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 136 &nbsp;·&nbsp; Sent 264
+                <span class="kw-pill">non-compliance</span>
+            </div>
+            <div class="ctx-block">In addition, Sony’s operations are conducted in many countries and regions around the world, and these international operations, particularly in certain emerging markets, can create challenges. For example, in the Entertainment, Technology & Services (“ET&S”), I&SS and G&NS segments, production and ...</div>
+            <div class="flagged-low">Further, in certain countries and regions, Sony may encounter difficulty in planning and managing operations due to unfavorable political or economic factors, such as armed conflicts, deterioration in foreign relations, changes in trade and tariff policies, non-compliance with expected business conduct and a lack of adequate infrastructure.</div>
+            <div class="ctx-block">If international or domestic political and military instability disrupts Sony’s business operations or those of its business partners Sony’s operating results and financial condition may be adversely affected. For example, as a response to the worsening of the situation in Ukraine and Russia that be...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 136 &nbsp;·&nbsp; Sent 264
+                <span class="kw-pill">tariff</span>
+            </div>
+            <div class="ctx-block">In addition, Sony’s operations are conducted in many countries and regions around the world, and these international operations, particularly in certain emerging markets, can create challenges. For example, in the Entertainment, Technology & Services (“ET&S”), I&SS and G&NS segments, production and ...</div>
+            <div class="flagged-low">Further, in certain countries and regions, Sony may encounter difficulty in planning and managing operations due to unfavorable political or economic factors, such as armed conflicts, deterioration in foreign relations, changes in trade and tariff policies, non-compliance with expected business conduct and a lack of adequate infrastructure.</div>
+            <div class="ctx-block">If international or domestic political and military instability disrupts Sony’s business operations or those of its business partners Sony’s operating results and financial condition may be adversely affected. For example, as a response to the worsening of the situation in Ukraine and Russia that be...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1A &nbsp;·&nbsp; Page 76 &nbsp;·&nbsp; Para 155 &nbsp;·&nbsp; Sent 316
+                <span class="kw-pill">injunction</span>
+            </div>
+            <div class="ctx-block">Claims have been and may be asserted against Sony that its products or services, including third-party parts, components, software and network services used in Sony’s products or services, infringe the intellectual property rights of other parties. Such claims may be asserted by competitors or by ot...</div>
+            <div class="flagged-low">Such claims might require Sony to enter into settlement or license agreements, pay significant damage awards, face an injunction or refrain from marketing, selling or distributing certain of its products and services.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1B &nbsp;·&nbsp; Page 129 &nbsp;·&nbsp; Para 175 &nbsp;·&nbsp; Sent 212
+                <span class="kw-pill">strike</span>
+            </div>
+            
+            <div class="flagged-low">Lower series deliveries in Television Productions in part due to production delays related to the strikes by WGA and SAG-AFTRA in the fiscal year ended March 31, 2024</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1B &nbsp;·&nbsp; Page 129 &nbsp;·&nbsp; Para 190 &nbsp;·&nbsp; Sent 228
+                <span class="kw-pill">strike</span>
+            </div>
+            
+            <div class="flagged-low">Although the operating performance of the Pictures segment for the fiscal year ended March 31, 2025 was impacted by adverse effects of the strikes by WGA and SAG-AFTRA in the fiscal year ended March 31, 2024, impacting Sony’s ability to produce content which mainly led to delays in deliveries of television series in Television Productions, the performance also reflected Sony’s strengths including its strong content IP and its disciplined business operations.</div>
+            <div class="ctx-block">Additionally, the DTC anime platform Crunchyroll steadily increased its paid subscribers through its vast content library and an expansion of distribution channels, and expanded its contribution to the operating performance of the Pictures segment. In this environment, Sony aims to continue to maxim...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1B &nbsp;·&nbsp; Page 129 &nbsp;·&nbsp; Para 283 &nbsp;·&nbsp; Sent 363
+                <span class="kw-pill">interest rate sensitivity</span>
+            </div>
+            <div class="ctx-block">economy began to recede, expectations of additional interest rate hikes by the Bank of Japan increased due to the risk of an increase in domestic prices, and long-term interest rates in Japan strengthened their upward trend. In January 2025, the policy interest rate was raised to 0.5%, and in the sp...</div>
+            <div class="flagged-low">In this environment, to mitigate the interest rate sensitivity against the result of the Financial Services segment, Sony is taking steps to sell and replace the bonds it currently holds and is reissuing certain existing contract blocks.</div>
+            <div class="ctx-block">In addition, Sony plans to execute the Partial Spin-off of the Financial Services business, resulting in SFGI becoming an affiliate of Sony accounted for using the equity method. Even after the execution of the Partial Spin-off of the Financial Services business, Sony aims to strengthen collaboratio...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 1B &nbsp;·&nbsp; Page 129 &nbsp;·&nbsp; Para 283 &nbsp;·&nbsp; Sent 367
+                <span class="kw-pill">AML</span>
+            </div>
+            <div class="ctx-block">Even after the execution of the Partial Spin-off of the Financial Services business, Sony aims to strengthen collaboration between the Financial Services business and the Sony Group through Sony’s brand and technology for the further growth of the Financial Services business. Regarding the brand, ev...</div>
+            <div class="flagged-low">From a technological perspective, Sony Financial Group intends to create a seamless customer experience from non-financial to financial by utilizing the technology, IP, and entertainment resources of the Sony Group in areas such as development of a Borderless Digital Banking service leveraging Web3-related technologies, data analysis and utilization for sales support for Lifeplanner sales specialists, customer support assisted by AI and utilization of game-related technologies and content for us...</div>
+            <div class="ctx-block">Sony Financial Group plans to substantially integrate the core competencies of each of its steadily growing businesses into Sony Life, which it believes has</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 6 &nbsp;·&nbsp; Page 100 &nbsp;·&nbsp; Para 163 &nbsp;·&nbsp; Sent 320
+                <span class="kw-pill">government regulation</span>
+            </div>
+            
+            <div class="flagged-low">Government Regulations</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 7A &nbsp;·&nbsp; Page 77 &nbsp;·&nbsp; Para 133 &nbsp;·&nbsp; Sent 289
+                <span class="kw-pill">litigation</span>
+            </div>
+            
+            <div class="flagged-low">Sony’s reputation, operating results and financial condition may be adversely affected as a result of adverse outcomes of litigation and regulatory actions.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 7A &nbsp;·&nbsp; Page 77 &nbsp;·&nbsp; Para 134 &nbsp;·&nbsp; Sent 290
+                <span class="kw-pill">litigation</span>
+            </div>
+            
+            <div class="flagged-low">Sony faces the risk of litigation and regulatory actions in different countries in connection with its operations.</div>
+            <div class="ctx-block">Legal proceedings, including regulatory actions, may seek to recover very large indeterminate amounts or to limit Sony’s operations, and the possibility that they may arise and their magnitude may remain unknown for substantial periods of time. For example, legal proceedings, including regulatory ac...</div>
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 7A &nbsp;·&nbsp; Page 77 &nbsp;·&nbsp; Para 134 &nbsp;·&nbsp; Sent 292
+                <span class="kw-pill">antitrust</span>
+            </div>
+            <div class="ctx-block">Sony faces the risk of litigation and regulatory actions in different countries in connection with its operations. Legal proceedings, including regulatory actions, may seek to recover very large indeterminate amounts or to limit Sony’s operations, and the possibility that they may arise and their ma...</div>
+            <div class="flagged-low">For example, legal proceedings, including regulatory actions, may result from antitrust scrutiny of market practices for anti-competit</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9 &nbsp;·&nbsp; Page 210 &nbsp;·&nbsp; Para 8 &nbsp;·&nbsp; Sent 8
+                <span class="kw-pill">dilution</span>
+            </div>
+            
+            <div class="flagged-low">Dilution</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language indicates potential stress on the company's financial position or ability to meet obligations. Cross-check against liquidity ratios and debt maturity schedules.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9 &nbsp;·&nbsp; Page 210 &nbsp;·&nbsp; Para 160 &nbsp;·&nbsp; Sent 225
+                <span class="kw-pill">injunction</span>
+            </div>
+            
+            <div class="flagged-low">In cases where a particular issue of new shares or stock acquisition rights (i) violates laws and regulations or Sony Group Corporation’s Articles of Incorporation, or (ii) will be performed in a materially unfair manner, and shareholders may suffer disadvantages therefrom, such shareholders may file an injunction to enjoin such issue with a court.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 25 &nbsp;·&nbsp; Sent 35
+                <span class="kw-pill">geopolitical risk</span>
+            </div>
+            
+            <div class="flagged-low">During the fiscal year ended March 31, 2025, the Board discussed a variety of matters, such as a review of Sony’s business performance on a quarterly basis, Sony’s business portfolio including the Partial Spin-off of the Financial Services business, progress and reviews of the results of the fifth mid-range plan, formation of a business plan for the fiscal year ending March 31, 2026, strategically important M&A, the transition to a new management structure, initiatives to maximize IP value acros...</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> Management is explicitly qualifying their own forward guidance with uncertainty language. Paired with other high-severity flags, this signals deteriorating confidence in the business outlook.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 36 &nbsp;·&nbsp; Sent 51
+                <span class="kw-pill">succession plan</span>
+            </div>
+            <div class="ctx-block">During the fiscal year ended March 31, 2025, the matters given consideration by the Nominating Committee included policies on selecting outside Director candidates, exploring Director prospects, and CEO succession.</div>
+            <div class="flagged-low">In addition, the Nominating Committee assessed succession plans for Senior Executives with key management responsibilities for individual business units and headquarters functions, based on management, including CEO, reports.</div>
+            <div class="ctx-block">With respect to the selection of candidates for outside Directors, as a priority item for the current fiscal year, the Nominating Committee confirmed the policy that candidates for outside Directors should be selected from persons who have experience as CEOs or as business unit leaders or equivalent...</div>
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 36 &nbsp;·&nbsp; Sent 55
+                <span class="kw-pill">succession plan</span>
+            </div>
+            <div class="ctx-block">As a result, three new outside Director candidates were appointed based on this policy. Regarding the appointment of Senior Executives, Kenichiro Yoshida, Representative Corporate Executive Officer, Chairman and CEO (at the time), proposed to the Nominating Committee that Hiroki Totoki, Representati...</div>
+            <div class="flagged-low">In addition, in connection with the CEO transition, the Nominating Committee reviewed and assessed succession plans for Senior Executives with key management responsibilities under the new CEO, Hiroki Totoki.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> An operational concentration or dependency has been disclosed that could disrupt business continuity. This is a structural vulnerability unlikely to be resolved quickly.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 46 &nbsp;·&nbsp; Sent 69
+                <span class="kw-pill">SOX 404</span>
+            </div>
+            
+            <div class="flagged-low">Specific considerations by the Audit Committee include review of audit plans in three-way audits, identification and audit of priority audit items for each fiscal year, review of financial results and disclosure documents related to financial results, review of development and operation of internal control systems, audit of financial reports and SOX 404-related activities, audit of internal audit activities, review of the content and process for determining the compensation of the independent au...</div>
+            <div class="ctx-block">In addition to these, the Audit Committee held interviews with Senior Executives and other officers to receive reports on matters such as the recognition of issues and the status of risk management in the respective areas of responsibility of each business and headquarter function, and engaged in di...</div>
+            <div class="why-box"><strong>Why this matters:</strong> Management is disclosing uncertainty about regulatory compliance, which may signal an active investigation or enforcement action. This warrants direct follow-up before any transaction.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 126 &nbsp;·&nbsp; Sent 181
+                <span class="kw-pill">related party transaction</span>
+            </div>
+            
+            <div class="flagged-low">Major Shareholders and Related Party Transactions</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 141 &nbsp;·&nbsp; Sent 206
+                <span class="kw-pill">related party transaction</span>
+            </div>
+            
+            <div class="flagged-low">Related Party Transactions</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 9A &nbsp;·&nbsp; Page 200 &nbsp;·&nbsp; Para 154 &nbsp;·&nbsp; Sent 219
+                <span class="kw-pill">legal proceedings</span>
+            </div>
+            
+            <div class="flagged-low">Legal Proceedings</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 7 &nbsp;·&nbsp; Sent 12
+                <span class="kw-pill">dilution</span>
+            </div>
+            <div class="ctx-block">The details of such stock-based compensation, including vesting conditions, recipients and number of grants, are determined or supervised by the Compensation Committee based on research conducted by a third party regarding stock-based compensation of both Japanese and non-Japanese companies.</div>
+            <div class="flagged-low">In addition, in determining the number of shares or units to be granted, the impact on dilution of the value of the shares of the Corporation is monitored.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language indicates potential stress on the company's financial position or ability to meet obligations. Cross-check against liquidity ratios and debt maturity schedules.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 11 &nbsp;·&nbsp; Page 183 &nbsp;·&nbsp; Para 236 &nbsp;·&nbsp; Sent 317
+                <span class="kw-pill">litigation</span>
+            </div>
+            
+            <div class="flagged-low">The insurance policy covers compensation for damages, litigation costs (including attorney’s fees) and other costs that may be incurred by the Executives as a result of assuming responsibility for the execution of their duties or receiving claims related to such responsibility.</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> This language signals unresolved legal exposure that management has not quantified. Explicit disclaimers about litigation outcomes indicate the risk is real and active.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 95 &nbsp;·&nbsp; Sent 110
+                <span class="kw-pill">board independence</span>
+            </div>
+            
+            <div class="flagged-low">Board Independence.</div>
+            <div class="ctx-block">A majority of board directors must be independent.</div>
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header low">
+                Item 14 &nbsp;·&nbsp; Page 244 &nbsp;·&nbsp; Para 239 &nbsp;·&nbsp; Sent 330
+                <span class="kw-pill">clawback</span>
+            </div>
+            
+            <div class="flagged-low">Sony Group Corporation Clawback Policy, incorporated by reference to Exhibit 97.1 to Sony’s annual report on Form 20-F for the fiscal year ended March 31, 2024 (Commission file number 001-06439) filed on June 25, 2024</div>
+            
+            <div class="why-box"><strong>Why this matters:</strong> A governance concern has been flagged that may affect board oversight or management integrity. These risks are often underweighted but material in M&A contexts.</div>
+        </div>
+        
+    
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 5 — NEW KEYWORDS THIS YEAR
+════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-title">New risk keywords — absent in prior year filing</div>
+    <p class="section-subtitle">New keyword appearances often signal emerging risks or changing disclosures.</p>
+
+    
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+    
+        
+        
+        <div class="kw-card">
+            <div>
+                <span class="kw-card-name">SOX 404</span>
+                <span class="sev-score">score 50</span>
+                
+                    <span style="color: #EF9F27; font-size: 9pt;">&#9679; elevated</span>
+                
+            </div>
+            <div class="kw-desc">First appearance in this filing — absent from prior year — signals a new or escalating risk disclosure area worth monitoring.</div>
+        </div>
+        
+        
+        <div class="kw-card">
+            <div>
+                <span class="kw-card-name">antitrust</span>
+                <span class="sev-score">score 50</span>
+                
+                    <span style="color: #EF9F27; font-size: 9pt;">&#9679; elevated</span>
+                
+            </div>
+            <div class="kw-desc">First appearance in this filing — absent from prior year — signals a new or escalating risk disclosure area worth monitoring.</div>
+        </div>
+        
+        
+        <div class="kw-card">
+            <div>
+                <span class="kw-card-name">export control</span>
+                <span class="sev-score">score 50</span>
+                
+                    <span style="color: #EF9F27; font-size: 9pt;">&#9679; elevated</span>
+                
+            </div>
+            <div class="kw-desc">First appearance in this filing — absent from prior year — signals a new or escalating risk disclosure area worth monitoring.</div>
+        </div>
+        
+        
+        <div class="kw-card">
+            <div>
+                <span class="kw-card-name">interest rate sensitivity</span>
+                <span class="sev-score">score 50</span>
+                
+                    <span style="color: #EF9F27; font-size: 9pt;">&#9679; elevated</span>
+                
+            </div>
+            <div class="kw-desc">First appearance in this filing — absent from prior year — signals a new or escalating risk disclosure area worth monitoring.</div>
+        </div>
+        
+        
+        <div class="kw-card">
+            <div>
+                <span class="kw-card-name">tariff</span>
+                <span class="sev-score">score 50</span>
+                
+                    <span style="color: #EF9F27; font-size: 9pt;">&#9679; elevated</span>
+                
+            </div>
+            <div class="kw-desc">First appearance in this filing — absent from prior year — signals a new or escalating risk disclosure area worth monitoring.</div>
+        </div>
+        
+
+        <div class="dot-legend">
+            <span class="dot-high">&#9679;</span> high severity (score 70+) &nbsp;&nbsp;
+            <span class="dot-mid">&#9679;</span> elevated (40–69) &nbsp;&nbsp;
+            <span class="dot-low">&#9679;</span> lower (&lt;40)
+        </div>
+    
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 6 — DASHBOARD
+════════════════════════════════════════════ -->
+<div class="page">
+    <div class="dash-title">Key findings — Sony Group Corporation SONY 2025</div>
+
+    <table class="stat-grid">
+        <tr>
+            <td>
+                <div class="stat-num">133</div>
+                <div class="stat-label">Total flags</div>
+            </td>
+            <td>
+                <div class="stat-num red">8</div>
+                <div class="stat-label">High severity</div>
+            </td>
+            <td>
+                <div class="stat-num amber">8</div>
+                <div class="stat-label">Medium severity</div>
+            </td>
+            <td>
+                <div class="stat-num green">117</div>
+                <div class="stat-label">Low severity</div>
+            </td>
+            <td>
+                <div class="stat-num">5</div>
+                <div class="stat-label">New keywords</div>
+            </td>
+            <td>
+                <div class="stat-num">0.033</div>
+                <div class="stat-label">Avg sentiment</div>
+            </td>
+        </tr>
+    </table>
+
+    <hr class="dash-rule">
+
+    <div class="divider div-navy" style="margin-bottom: 12px;">Three things to raise in this meeting</div>
+
+    
+    <div class="three-raise-item">
+        <span class="raise-num">1.</span>
+        <span class="raise-text">Governance risk increased by 5 flags year-over-year</span>
+        <br>
+        <span class="raise-tag">See risk heat map</span>
+    </div>
+    
+    <div class="three-raise-item">
+        <span class="raise-num">2.</span>
+        <span class="raise-text">"no assurance" flagged in Item 1A (severity score 95)</span>
+        <br>
+        <span class="raise-tag">Page 76, Para 106</span>
+    </div>
+    
+    <div class="three-raise-item">
+        <span class="raise-num">3.</span>
+        <span class="raise-text">New keyword "SOX 404" (score 50) — absent in prior filing</span>
+        <br>
+        <span class="raise-tag">Absent in prior filing</span>
+    </div>
+    
+
+    <div class="page-footer">
+        Not financial advice &nbsp;·&nbsp; For due diligence purposes only &nbsp;·&nbsp; RedFlag &nbsp;·&nbsp; trikosh.io
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 7 — SOURCE & REPRODUCIBILITY
+════════════════════════════════════════════ -->
+<div class="page">
+    <div class="section-title">Source &amp; reproducibility</div>
+
+    <table class="source-table">
+        <tr>
+            <td class="lbl">Source type</td>
+            <td class="val">SEC EDGAR (20-F / Foreign Private Issuer)</td>
+        </tr>
+        <tr>
+            <td class="lbl">Filing date</td>
+            <td class="val">2025-06-20</td>
+        </tr>
+        <tr>
+            <td class="lbl">Prior filing date</td>
+            <td class="val">2024-06-25</td>
+        </tr>
+        <tr>
+            <td class="lbl">Analyzed on</td>
+            <td class="val">2026-06-05</td>
+        </tr>
+        <tr>
+            <td class="lbl">Sections scanned</td>
+            <td class="val">Item 11, Item 14, Item 1A, Item 1B, Item 6, Item 7A, Item 9, Item 9A</td>
+        </tr>
+        <tr>
+            <td class="lbl">Keyword library version</td>
+            <td class="val">v2.0 — 220+ keywords, 6 categories</td>
+        </tr>
+        <tr>
+            <td class="lbl">Explanation engine</td>
+            <td class="val">Claude API (claude-haiku-4-5-20251001) + rule-based fallback</td>
+        </tr>
+        <tr>
+            <td class="lbl">GitHub</td>
+            <td class="val">github.com/zshqv/RedFlag</td>
+        </tr>
+        <tr>
+            <td class="lbl">Companion tool</td>
+            <td class="val">trikosh.io — Trikosh tells you what a company looks like. RedFlag tells you what's wrong with it.</td>
+        </tr>
+    </table>
+
+    <div class="full-disclaimer">
+        <strong>DISCLAIMER:</strong> This report is not financial advice and must not be relied upon as the sole basis
+        for investment decisions. RedFlag is a due diligence co-pilot that highlights linguistic risk anomalies in
+        financial filings. All findings are keyword-based and must be validated by qualified human analysts familiar
+        with the company and its industry context. Severity scoring is rule-based and does not constitute a professional
+        risk assessment. Not financial advice. For due diligence purposes only.
+    </div>
+</div>
+
+</body>
+</html>
