@@ -252,20 +252,22 @@ def generate_excel(ticker, analysis, comparison, latest_date, previous_date):
 # ─────────────────────────────────────────────────────────────
 
 def _build_pdf_context(ticker, analysis, comparison, latest_date, exchange, previous_date):
+    import math
     findings = analysis["findings"]
     summary  = analysis["summary"]
     high_count   = summary["by_severity"].get("HIGH", 0)
     medium_count = summary["by_severity"].get("MEDIUM", 0)
     low_count    = summary["by_severity"].get("LOW", 0)
     total        = summary["total"]
+    by_category  = summary.get("by_category", {})
 
     if high_count > 0:
-        verdict_label = "CRITICAL RISK"
+        verdict_label = "HIGH RISK"
         verdict_class = "verdict-red"
         verdict_line1 = f"{high_count} HIGH-severity flag(s) detected — immediate review required."
         verdict_line2 = "Do not proceed without resolving these items in due diligence."
     elif medium_count > 3:
-        verdict_label = "ELEVATED RISK"
+        verdict_label = "MEDIUM RISK"
         verdict_class = "verdict-amber"
         verdict_line1 = f"{medium_count} MEDIUM-severity flags detected — detailed review recommended."
         verdict_line2 = "Each flag should be traced to source documents and management commentary."
@@ -280,32 +282,100 @@ def _build_pdf_context(ticker, analysis, comparison, latest_date, exchange, prev
         avg_sev = round(sum(f.get("severity_score", 50) for f in findings) / total)
 
     overall = comparison.get("overall", {})
+    cat_grid = comparison.get("by_category", {})
+    new_kws  = comparison.get("new_keywords", [])
+
+    # Bar chart max
+    max_cat_count = max((v.get("current_count", 0) for v in cat_grid.values()), default=1)
+    if max_cat_count == 0:
+        max_cat_count = 1
+
+    # Medium findings split between pages 3 and 4
+    medium_findings = [f for f in findings if f["severity"] == "MEDIUM"]
+    medium_split    = math.ceil(len(medium_findings) / 2) if medium_findings else 0
+    medium_first    = medium_findings[:medium_split]
+    medium_second   = medium_findings[medium_split:]
+
+    # Filing year for dashboard title
+    filing_year = str(latest_date)[:4] if latest_date else "N/A"
+
+    # Bottom line (auto-generated)
+    dominant_category = max(by_category, key=by_category.get) if by_category else "Operational"
+    traj_str = overall.get("trajectory", "stable").lower()
+    top_kw = findings[0]["keyword"] if findings else "N/A"
+    first_new_kw = new_kws[0] if new_kws else "none identified"
+    bottom_line = (
+        f"{dominant_category} exposure has {traj_str} year-over-year, "
+        f"with \"{top_kw}\" representing the highest-severity flag. "
+        f"{len(new_kws)} new keyword(s) — including \"{first_new_kw}\" "
+        f"— suggest a changing disclosure posture not present in the prior filing."
+    )
+
+    # Three things to raise
+    kw_to_score = {f["keyword"]: f["severity_score"] for f in findings}
+
+    if cat_grid:
+        big_cat, big_cd = max(cat_grid.items(), key=lambda x: x[1].get("change", 0))
+        raise_1 = {
+            "text": f"{big_cat} risk increased by {big_cd.get('change', 0)} flags year-over-year",
+            "tag": "See risk heat map",
+        }
+    else:
+        raise_1 = {"text": "No year-over-year category data available", "tag": ""}
+
+    if findings:
+        top = findings[0]
+        raise_2 = {
+            "text": f"\"{top['keyword']}\" flagged in {top['section']} (severity score {top['severity_score']})",
+            "tag": f"Page {top['page_num']}, Para {top['para_num']}",
+        }
+    else:
+        raise_2 = {"text": "No findings identified", "tag": ""}
+
+    if new_kws:
+        top_new = max(new_kws, key=lambda k: kw_to_score.get(k, 0))
+        raise_3 = {
+            "text": f"New keyword \"{top_new}\" (score {kw_to_score.get(top_new, 0)}) — absent in prior filing",
+            "tag": "Absent in prior filing",
+        }
+    else:
+        raise_3 = {"text": "No new keywords identified in this filing", "tag": ""}
 
     return {
-        "ticker":          ticker,
-        "exchange":        exchange,
-        "filing_date":     str(latest_date or "N/A"),
-        "previous_date":   str(previous_date or "N/A"),
-        "generated_date":  datetime.now().strftime("%Y-%m-%d"),
-        "verdict_label":   verdict_label,
-        "verdict_class":   verdict_class,
-        "verdict_line1":   verdict_line1,
-        "verdict_line2":   verdict_line2,
-        "total_findings":  total,
-        "high_count":      high_count,
-        "medium_count":    medium_count,
-        "low_count":       low_count,
-        "avg_severity":    avg_sev,
-        "avg_sentiment":   summary.get("avg_sentiment", 0.0),
-        "sections_scanned": summary.get("sections_with_flags", []),
-        "high_findings":   [f for f in findings if f["severity"] == "HIGH"],
-        "medium_findings": [f for f in findings if f["severity"] == "MEDIUM"],
-        "low_findings":    [f for f in findings if f["severity"] == "LOW"],
-        "has_previous":    bool(previous_date),
-        "category_grid":   comparison.get("by_category", {}),
-        "new_keywords":    comparison.get("new_keywords", []),
-        "sentiment_trend": comparison.get("sentiment_trend", {}),
-        "overall":         overall,
+        "ticker":            ticker,
+        "company_name":      ticker,
+        "doc_type":          "10-K / Annual Report",
+        "exchange":          exchange,
+        "filing_date":       str(latest_date or "N/A"),
+        "filing_year":       filing_year,
+        "previous_date":     str(previous_date or "N/A"),
+        "generated_date":    datetime.now().strftime("%Y-%m-%d"),
+        "verdict_label":     verdict_label,
+        "verdict_class":     verdict_class,
+        "verdict_line1":     verdict_line1,
+        "verdict_line2":     verdict_line2,
+        "bottom_line":       bottom_line,
+        "three_to_raise":    [raise_1, raise_2, raise_3],
+        "total_findings":    total,
+        "high_count":        high_count,
+        "medium_count":      medium_count,
+        "low_count":         low_count,
+        "avg_severity":      avg_sev,
+        "avg_sentiment":     summary.get("avg_sentiment", 0.0),
+        "sections_scanned":  summary.get("sections_with_flags", []),
+        "high_findings":     [f for f in findings if f["severity"] == "HIGH"],
+        "medium_findings":   medium_findings,
+        "medium_first":      medium_first,
+        "medium_second":     medium_second,
+        "low_findings":      [f for f in findings if f["severity"] == "LOW"],
+        "has_previous":      bool(previous_date),
+        "category_grid":     cat_grid,
+        "max_cat_count":     max_cat_count,
+        "new_keywords":      new_kws,
+        "sentiment_trend":   comparison.get("sentiment_trend", {}),
+        "overall":           overall,
+        "trajectory":        overall.get("trajectory", "STABLE"),
+        "by_category":       by_category,
     }
 
 
