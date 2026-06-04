@@ -122,8 +122,13 @@ def clean_html_to_text(raw_html):
     for tag in soup(["script", "style", "meta", "link"]):
         tag.decompose()
 
+    # Insert paragraph markers before block-level tags so scan_section can split by \n\n
+    for tag in soup.find_all(["p", "div", "li", "h1", "h2", "h3", "h4", "h5", "h6", "tr"]):
+        tag.insert_before("\n\n")
+
     text = soup.get_text(separator=" ")
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"[ \t]+", " ", text)       # collapse horizontal whitespace only
+    text = re.sub(r"\n{3,}", "\n\n", text)     # normalize 3+ newlines to double
     text_lower = text.lower()
 
     print(f"[RedFlag] Cleaned text length: {len(text):,} characters")
