@@ -5,11 +5,11 @@ import anthropic
 FALLBACK_TEMPLATES = {
     "Legal": (
         "This language signals unresolved legal exposure that management has not quantified. "
-        "In due diligence, explicit disclaimers about litigation outcomes indicate the risk is real and active."
+        "Explicit disclaimers about litigation outcomes indicate the risk is real and active."
     ),
     "Regulatory": (
         "Management is disclosing uncertainty about regulatory compliance, which may signal an active "
-        "investigation or pending enforcement action. This warrants direct follow-up before any transaction proceeds."
+        "investigation or enforcement action. This warrants direct follow-up before any transaction."
     ),
     "Financial": (
         "This language indicates potential stress on the company's financial position or ability to meet obligations. "
@@ -17,15 +17,15 @@ FALLBACK_TEMPLATES = {
     ),
     "Operational": (
         "An operational concentration or dependency has been disclosed that could disrupt business continuity. "
-        "This represents a structural vulnerability unlikely to be resolved quickly."
+        "This is a structural vulnerability unlikely to be resolved quickly."
     ),
     "Governance": (
         "A governance concern has been flagged that may affect board oversight or management integrity. "
-        "These risks are often underweighted in quantitative analysis but material in M&A contexts."
+        "These risks are often underweighted but material in M&A contexts."
     ),
     "Forward-Looking": (
         "Management is explicitly qualifying their own forward guidance with uncertainty language. "
-        "Paired with other high-severity flags, this can signal deteriorating confidence in the business outlook."
+        "Paired with other high-severity flags, this signals deteriorating confidence in the business outlook."
     ),
 }
 
