@@ -1,130 +1,128 @@
-# RedFlag 🚩
+# RedFlag
 
-**Flags the risk anomalies in SEC filings your human eye misses.**
+![MIT License](https://img.shields.io/badge/license-MIT-green.svg)
 
-A junior analyst spends 3–4 hours manually reading through a 200-page SEC 10-K filing, hunting for red flags buried in legal language. RedFlag does it in under 60 seconds — pulling the filing, scanning for risk language across four categories, scoring sentiment, comparing year-over-year, and exporting a clean Excel and PDF report.
+**RedFlag — a due diligence co-pilot that flags risk anomalies in financial filings so analysts and consultants don't miss what matters.**
 
-Free. Open-source. Built for analysts who don't have Bloomberg.
-
----
-
-## What It Does
-
-| Step | What Happens |
-|---|---|
-| 1 | You provide a stock ticker — e.g. `AAPL` |
-| 2 | RedFlag pulls the latest 10-K directly from SEC EDGAR |
-| 3 | It isolates the high-risk sections — Risk Factors, MD&A, Financial Notes |
-| 4 | It flags hundreds of risk keywords across Legal, Financial, Operational, and Regulatory categories |
-| 5 | It scores the sentiment of the language surrounding each flag |
-| 6 | It compares this year's filing to last year's — tracking if risk language is increasing |
-| 7 | It exports a structured Excel report and a one-page PDF summary |
+> **Companion:** Trikosh tells you what a company looks like. RedFlag tells you what's wrong with it. [trikosh.io](https://trikosh.io)
 
 ---
 
-## Before vs. After
+## Supported Sources
 
-| | Before RedFlag | After RedFlag |
-|---|---|---|
-| Time per filing | 3–4 hours | Under 60 seconds |
-| Process | Manual keyword search, Ctrl+F, highlighter | One command |
-| Output | Hand-typed notes in Word | Structured Excel + PDF report |
-| Year-on-year comparison | Done manually across two browser tabs | Automated |
-| Coverage | One filing per analyst session | Any SEC-registered company, instantly |
-
----
-
-## Output
-
-Running RedFlag on any ticker produces two files:
-
-- **`TICKER_risk_report.xlsx`** — Categorised keyword hits by section and risk type, sentiment scores, and year-over-year comparison
-- **`TICKER_summary.pdf`** — One-page executive summary of the highest-priority flags
-
-Sample output for Apple Inc. is included in the `/sample_output` folder.
+| Source | Ticker Format | Data Provider |
+|--------|--------------|---------------|
+| US Public Companies | `AAPL`, `JPM` | SEC EDGAR (EDGAR full-text search) |
+| UK Listed Companies | `HSBC.L`, `BP.L` | Companies House API + IR page fallback |
+| India BSE / NSE | `RELIANCE.NS`, `TCS.BO` | BSE / NSE investor relations |
+| Canada TSX / TSXV | `RY.TO`, `SU.TO` | SEDAR+ public filing search |
+| Manual PDF | `--pdf "/path/to/file.pdf"` | Local file (any country) |
 
 ---
 
-## Installation
+## Outputs
+
+Every run produces **3 output files** in `output/`:
+
+| File | Format | Contents |
+|------|--------|----------|
+| `TICKER_redflag.xlsx` | Excel | 3 sheets: Quick Brief · Risk Dashboard · YoY Comparison |
+| `TICKER_redflag.pdf` | PDF | 7 pages: Cover · Methodology · HIGH/MEDIUM/LOW findings · YoY · Source |
+| `TICKER_dashboard.pptx` | PowerPoint | 8 slides: Cover · Scorecard · Heat Map · All Flags · Top 3 · New Keywords · YoY · Methodology |
+
+---
+
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/zshqv/redflag.git
-cd redflag
-
-# Install dependencies
 pip install -r requirements.txt
+
+# US company (SEC EDGAR)
+python main.py AAPL
+
+# UK company (Companies House)
+python main.py HSBC.L
+
+# India (BSE/NSE)
+python main.py RELIANCE.NS
+
+# Canada (SEDAR+)
+python main.py RY.TO
+
+# Manual PDF
+python main.py --pdf "/path/to/annual_report.pdf"
+
+# Peer comparison (generates individual + comparison output)
+python main.py --compare JPM BAC GS
 ```
 
 ---
 
-## Usage
+## Optional: Claude-Powered Explanations
+
+Set `ANTHROPIC_API_KEY` in your environment to enable AI-generated 2-sentence explanations per finding using `claude-haiku-4-5-20251001`. Without the key, deterministic rule-based fallback templates are used automatically.
 
 ```bash
-python main.py AAPL
-```
+# Windows PowerShell
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
 
-Replace `AAPL` with any valid stock ticker. RedFlag handles the rest.
-
----
-
-## Project Structure
-
-```
-redflag/
-│
-├── main.py               # Entry point — run this
-├── keywords.py           # Master risk keyword library across 4 categories
-├── edgar_fetcher.py      # Pulls 10-K filings directly from SEC EDGAR API
-├── text_parser.py        # Extracts and cleans high-risk sections
-├── risk_analyzer.py      # Keyword flagging + sentiment scoring
-├── comparator.py         # Year-over-year risk language comparison
-├── report_generator.py   # Exports Excel + PDF reports
-├── requirements.txt      # All dependencies
-└── sample_output/        # Pre-generated sample reports for AAPL
+# macOS / Linux
+export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
 ---
 
-## Tech Stack
+## File Structure
 
-| Library | Purpose |
-|---|---|
-| `requests` | HTTP calls to SEC EDGAR free API |
-| `beautifulsoup4` | Parses raw HTML filing documents |
-| `nltk` / `textblob` | Sentiment scoring on flagged text |
-| `pandas` | Structures and compares data |
-| `openpyxl` | Builds the Excel report |
-| `fpdf2` | Generates the PDF summary |
-
-All tools are free and open-source. No API keys required.
-
----
-
-## Why SEC EDGAR
-
-Every paid financial data provider — Bloomberg, FactSet, Capital IQ — is reselling EDGAR data with a better interface. EDGAR is the primary source. It's free, public, and updated in real time. RedFlag goes directly to the source.
-
----
-
-## Part of the Open-Source Finance Ecosystem
-
-RedFlag is built alongside **[Trikosh](https://trikosh.io)** — an open-source financial research infrastructure platform covering 30 global companies across Financial Services, AI, and Healthcare.
-
-> Trikosh gives you the data. RedFlag tells you what's wrong with it.
-
-Both tools are built on the same philosophy: financial research infrastructure should not cost $24,000 a year.
+| File | Description |
+|------|-------------|
+| `main.py` | CLI entry point — routes all inputs, runs full pipeline |
+| `keywords.py` | 220+ risk keywords across 6 categories + 6 industry packs |
+| `text_parser.py` | Extracts all 18 standard 10-K sections with page estimation |
+| `risk_analyzer.py` | 3-tier severity scoring, full location metadata, co-occurrence |
+| `comparator.py` | Year-over-year comparison: category deltas, new keywords, sentiment trend |
+| `flag_explainer.py` | Claude API explanations per finding, rule-based fallback |
+| `report_generator.py` | Generates Excel (3 sheets), PDF (7 pages), PPTX (8 slides) |
+| `pdf_template.html` | Jinja2 / WeasyPrint HTML template for the PDF output |
+| `fetchers/fetcher_router.py` | Routes to correct fetcher by ticker suffix or file path |
+| `fetchers/edgar_fetcher.py` | SEC EDGAR — US 10-K filings |
+| `fetchers/fca_fetcher.py` | Companies House API — UK annual reports |
+| `fetchers/bse_fetcher.py` | BSE / NSE investor relations — India |
+| `fetchers/sedar_fetcher.py` | SEDAR+ — Canada annual filings |
+| `fetchers/pdf_fetcher.py` | Manual PDF ingestion via pdfplumber (any country) |
+| `requirements.txt` | Full Python dependency list |
 
 ---
 
-## Contributing
+## Keyword Library — v2.0
 
-Pull requests are welcome. If you're a finance student or analyst and want to add keywords, improve the sentiment model, or extend coverage — open an issue and let's talk.
+220+ keywords across 6 risk categories, with 6 industry-specific packs:
+
+| Category | Keywords | Examples |
+|----------|---------|---------|
+| Legal / Litigation | 45 | class action, indictment, consent decree, whistleblower |
+| Regulatory / Compliance | 40 | OFAC, AML, material weakness, SOX 404, data breach |
+| Financial / Liquidity | 40 | going concern, covenant breach, goodwill impairment, cash burn |
+| Operational / Strategic | 40 | key person, customer concentration, force majeure, product recall |
+| Governance / ESG | 30 | self-dealing, poison pill, dual class shares, ESG rating downgrade |
+| Forward-Looking / Uncertainty | 25 | no assurance, headwinds, recessionary conditions |
+
+Industry packs: **Banking · Technology · Healthcare · Energy · Real Estate · Consulting**
+
+---
+
+## Severity Scoring
+
+| Tier | Trigger | Score Modifier |
+|------|---------|---------------|
+| HIGH | Sentiment < -0.25 **or** keyword in always-high list | +20 |
+| MEDIUM | Sentiment in (-0.25, -0.10) or mitigating language | — |
+| LOW | Sentiment >= -0.10 | — |
+
+Score modifiers: -15 (mitigating language in sentence), +15 (amplifying language), +10 (same keyword in 2+ findings in section). Base score: 50. Clamped 0-100.
 
 ---
 
 ## License
 
-MIT License — free to use, modify, and distribute with attribution.
-
-Built by [Ashutosh Tripathi](https://github.com/zshqv)
+MIT — see [LICENSE](LICENSE)
