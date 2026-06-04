@@ -193,6 +193,10 @@ def extract_sections(raw_html):
         sections[section_name] = {"text": section_text, "page_num": page_num}
         print(f"[RedFlag] Extracted {len(section_text):,} chars from '{section_name}' (page {page_num})")
 
+    found_count = sum(1 for s in sections.values() if s["text"])
+    total_words = sum(len(s["text"].split()) for s in sections.values())
+    print(f"[RedFlag] Sections found: {found_count}/{len(SECTION_MARKERS)} | Total words extracted: {total_words:,}")
+
     return sections
 
 
