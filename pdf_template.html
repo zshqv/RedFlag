@@ -1,361 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>RedFlag Report — {{ ticker }}</title>
+    <title>RedFlag — {{ ticker }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @page { size: A4; margin: 18mm 15mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #222; background: white; line-height: 1.5; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-        }
+        .page { page-break-after: always; padding-bottom: 24px; }
+        .page:last-child { page-break-after: avoid; }
 
-        .page {
-            page-break-after: always;
-            background: white;
-            margin: 0;
-            padding: 40px;
-            min-height: 100vh;
-        }
+        h1 { font-size: 24px; color: #1a1a2e; font-weight: bold; margin-bottom: 6px; }
+        h2 { font-size: 13px; color: #1a1a2e; font-weight: bold; margin: 14px 0 8px; padding: 6px 10px; border-bottom: 2px solid #1a1a2e; }
+        h3 { font-size: 11px; color: #1a1a2e; font-weight: bold; margin: 10px 0 5px; }
+        p  { margin-bottom: 5px; }
 
-        .page:last-child {
-            page-break-after: avoid;
-        }
+        /* Section dividers */
+        .divider { padding: 7px 12px; margin: 18px 0 10px; color: white; font-weight: bold; font-size: 13px; }
+        .divider.navy   { background: #1a1a2e; }
+        .divider.red    { background: #E24B4A; }
+        .divider.amber  { background: #EF9F27; }
+        .divider.green  { background: #3B6D11; }
 
-        h1 {
-            font-size: 28px;
-            color: #1a1a2e;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
+        /* Verdict */
+        .verdict-badge { display: inline-block; padding: 9px 18px; font-weight: bold; font-size: 20px; color: white; border-radius: 3px; margin: 8px 0 10px; }
+        .verdict-red   { background: #E24B4A; }
+        .verdict-amber { background: #EF9F27; }
+        .verdict-green { background: #3B6D11; }
+        .verdict-text  { font-size: 12px; margin: 6px 0; line-height: 1.7; }
 
-        h2 {
-            font-size: 20px;
-            color: #1a1a2e;
-            margin-top: 20px;
-            margin-bottom: 15px;
-            border-bottom: 3px solid #1a1a2e;
-            padding-bottom: 10px;
-        }
+        /* Metrics */
+        .metric-box { display: inline-block; text-align: center; border: 1px solid #ddd; padding: 8px 18px; margin: 4px 4px 4px 0; min-width: 72px; vertical-align: top; }
+        .metric-num { font-size: 20px; font-weight: bold; color: #1a1a2e; }
+        .metric-num.red   { color: #E24B4A; }
+        .metric-num.amber { color: #EF9F27; }
+        .metric-num.green { color: #3B6D11; }
+        .metric-label { font-size: 9px; color: #666; margin-top: 2px; }
 
-        h3 {
-            font-size: 16px;
-            color: #1a1a2e;
-            margin-top: 15px;
-            margin-bottom: 10px;
-        }
+        /* Finding cards */
+        .finding-card { border-left: 4px solid #ccc; padding: 8px 10px; margin: 6px 0; page-break-inside: avoid; }
+        .finding-card.high   { border-left-color: #E24B4A; background: #fff5f5; }
+        .finding-card.medium { border-left-color: #EF9F27; background: #fffbf0; }
+        .finding-card.low    { border-left-color: #3B6D11; background: #f4faf4; }
 
-        p, li {
-            margin-bottom: 10px;
-            font-size: 13px;
-        }
+        .finding-meta { font-size: 10px; color: #1a1a2e; font-weight: bold; margin-bottom: 5px; }
+        .finding-meta span { margin-right: 8px; }
+        .sev-badge { display: inline-block; padding: 1px 5px; border-radius: 2px; font-size: 9px; font-weight: bold; color: white; }
+        .sev-badge.high   { background: #E24B4A; }
+        .sev-badge.medium { background: #EF9F27; }
+        .sev-badge.low    { background: #3B6D11; }
 
-        .header-info {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-            font-size: 12px;
-        }
+        .ctx-before  { color: #888; font-style: italic; font-size: 10px; margin: 3px 0; }
+        .flagged     { background: #ffffcc; padding: 4px 6px; border-radius: 2px; font-size: 11px; margin: 3px 0; }
+        .ctx-after   { color: #888; font-style: italic; font-size: 10px; margin: 3px 0; }
+        .explanation { font-size: 10px; color: #333; border-left: 2px solid #ccc; padding: 3px 6px; margin-top: 5px; }
 
-        .header-cell {
-            display: table-cell;
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
-        }
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+        th { background: #1a1a2e; color: white; padding: 5px 7px; text-align: left; font-weight: bold; }
+        td { padding: 5px 7px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f8f8f8; }
 
-        .header-label {
-            font-weight: 700;
-            color: #1a1a2e;
-            width: 25%;
-        }
+        /* Info table */
+        .info-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+        .info-table td { padding: 5px 8px; border: 1px solid #ddd; }
+        .info-table td.label { font-weight: bold; color: #1a1a2e; width: 28%; background: #f4f4f4; }
 
-        .metric-box {
-            display: inline-block;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin: 5px;
-            text-align: center;
-            min-width: 80px;
-        }
+        /* Keyword pills */
+        .kw-pill { display: inline-block; background: #e8e8e8; padding: 2px 7px; margin: 2px; border-radius: 3px; font-size: 9px; }
 
-        .metric-number {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1a1a2e;
-        }
+        /* Traj badge */
+        .traj-badge { display: inline-block; padding: 3px 10px; border-radius: 2px; font-weight: bold; font-size: 11px; color: white; }
+        .traj-deteri { background: #E24B4A; }
+        .traj-stable { background: #888888; }
+        .traj-improv { background: #3B6D11; }
 
-        .metric-label {
-            font-size: 11px;
-            color: #666;
-        }
+        /* Disclaimer */
+        .disclaimer { background: #f5f5f5; padding: 8px 10px; border-radius: 2px; font-size: 9px; color: #555; margin-top: 14px; }
 
-        .verdict-badge {
-            display: inline-block;
-            padding: 12px 20px;
-            border-radius: 4px;
-            font-weight: 700;
-            color: white;
-            font-size: 16px;
-            margin: 10px 0;
-        }
-
-        .verdict-red {
-            background-color: #e74c3c;
-        }
-
-        .verdict-amber {
-            background-color: #f39c12;
-        }
-
-        .verdict-green {
-            background-color: #27ae60;
-        }
-
-        .verdict-text {
-            font-size: 13px;
-            color: #333;
-            line-height: 1.8;
-            margin-top: 10px;
-        }
-
-        .finding-card {
-            background: #f9f9f9;
-            border-left: 4px solid #ddd;
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 2px;
-        }
-
-        .finding-card.high {
-            border-left-color: #e74c3c;
-            background-color: #fee;
-        }
-
-        .finding-card.medium {
-            border-left-color: #f39c12;
-            background-color: #fffbf0;
-        }
-
-        .finding-card.low {
-            border-left-color: #27ae60;
-            background-color: #eef;
-        }
-
-        .finding-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #1a1a2e;
-        }
-
-        .finding-section {
-            background: white;
-            padding: 3px 6px;
-            border-radius: 2px;
-            font-size: 10px;
-        }
-
-        .finding-keyword {
-            display: inline-block;
-            background: #1a1a2e;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 2px;
-            font-size: 10px;
-            margin-right: 5px;
-        }
-
-        .finding-context {
-            font-size: 12px;
-            margin: 8px 0;
-            line-height: 1.5;
-        }
-
-        .context-before {
-            color: #888;
-            font-style: italic;
-            margin-bottom: 6px;
-        }
-
-        .flagged-sentence {
-            background: #ffffcc;
-            padding: 6px;
-            border-radius: 2px;
-            margin-bottom: 6px;
-            font-size: 12px;
-        }
-
-        .context-after {
-            color: #888;
-            font-style: italic;
-            margin-bottom: 6px;
-        }
-
-        .explanation {
-            background: white;
-            padding: 6px;
-            border-radius: 2px;
-            font-size: 11px;
-            color: #333;
-            border-left: 2px solid #ddd;
-            margin-top: 8px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-            font-size: 12px;
-        }
-
-        th {
-            background: #1a1a2e;
-            color: white;
-            padding: 8px;
-            text-align: left;
-            font-weight: 700;
-        }
-
-        td {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        tr:nth-child(even) {
-            background: #f9f9f9;
-        }
-
-        .footer {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 2px solid #ddd;
-            font-size: 11px;
-            color: #666;
-        }
-
-        .disclaimer {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 2px;
-            font-size: 10px;
-            color: #666;
-            margin-top: 15px;
-        }
-
-        .category-grid {
-            display: table;
-            width: 100%;
-            margin: 15px 0;
-        }
-
-        .cat-cell {
-            display: table-cell;
-            width: 25%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-
-        .cat-name {
-            font-weight: 700;
-            color: #1a1a2e;
-            font-size: 13px;
-        }
-
-        .cat-count {
-            font-size: 16px;
-            font-weight: 700;
-            color: #e74c3c;
-        }
-
-        .trend-arrow {
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .keyword-pill {
-            display: inline-block;
-            background: #e8e8e8;
-            padding: 6px 10px;
-            margin: 4px;
-            border-radius: 4px;
-            font-size: 11px;
-            border-left: 3px solid #ddd;
-        }
-
-        .keyword-pill.high {
-            border-left-color: #e74c3c;
-        }
-
-        .keyword-pill.medium {
-            border-left-color: #f39c12;
-        }
-
-        .keyword-pill.low {
-            border-left-color: #27ae60;
-        }
+        ul { margin-left: 16px; margin-bottom: 6px; }
+        li { margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
-<!-- PAGE 1 — COVER SNAPSHOT -->
+<!-- ═══ PAGE 1 — COVER SNAPSHOT ═══ -->
 <div class="page">
     <h1>{{ ticker }}: RedFlag Risk Report</h1>
-    <p style="margin-bottom: 20px; color: #666;"><strong>Exchange:</strong> {{ exchange }} | <strong>Filing Date:</strong> {{ filing_date }} | <strong>Report Date:</strong> {{ generated_date }}</p>
+    <p style="color:#666; margin-bottom:12px;">
+        <strong>Source:</strong> {{ exchange }} &nbsp;|&nbsp;
+        <strong>Filing Date:</strong> {{ filing_date }} &nbsp;|&nbsp;
+        <strong>Analysis Date:</strong> {{ generated_date }}
+    </p>
 
-    <div class="verdict-badge {{ verdict_badge_class }}">{{ verdict[0] }}</div>
+    <div class="verdict-badge {{ verdict_class }}">{{ verdict_label }}</div>
 
     <div class="verdict-text">
-        <p><strong>Verdict:</strong></p>
-        <p>{{ verdict[1] }}</p>
-        <p>{{ verdict[2] }}</p>
+        <p>{{ verdict_line1 }}</p>
+        <p>{{ verdict_line2 }}</p>
     </div>
 
-    <div style="margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
-        <h3>Finding Counts</h3>
+    <div style="margin-top:16px;">
         <div class="metric-box">
-            <div class="metric-number">{{ total_findings }}</div>
+            <div class="metric-num">{{ total_findings }}</div>
             <div class="metric-label">Total Flags</div>
         </div>
-        <div class="metric-box" style="color: #e74c3c;">
-            <div class="metric-number" style="color: #e74c3c;">{{ findings_by_severity.HIGH | default(0) }}</div>
+        <div class="metric-box">
+            <div class="metric-num red">{{ high_count }}</div>
             <div class="metric-label">HIGH</div>
         </div>
-        <div class="metric-box" style="color: #f39c12;">
-            <div class="metric-number" style="color: #f39c12;">{{ findings_by_severity.MEDIUM | default(0) }}</div>
+        <div class="metric-box">
+            <div class="metric-num amber">{{ medium_count }}</div>
             <div class="metric-label">MEDIUM</div>
         </div>
-        <div class="metric-box" style="color: #27ae60;">
-            <div class="metric-number" style="color: #27ae60;">{{ findings_by_severity.LOW | default(0) }}</div>
+        <div class="metric-box">
+            <div class="metric-num green">{{ low_count }}</div>
             <div class="metric-label">LOW</div>
         </div>
-    </div>
-
-    <div class="footer">
-        <p><strong>Average Severity Score:</strong> {{ avg_severity }}/100</p>
-        <p><strong>Methodology:</strong> Keyword scanning, sentiment analysis, rule-based severity scoring.</p>
+        <div class="metric-box">
+            <div class="metric-num">{{ avg_severity }}</div>
+            <div class="metric-label">Avg Score</div>
+        </div>
     </div>
 </div>
 
-<!-- PAGE 2 — METHODOLOGY -->
+<!-- ═══ PAGE 2 — METHODOLOGY ═══ -->
 <div class="page">
-    <h2>Methodology & Sections Analyzed</h2>
+    <div class="divider navy">Methodology &amp; Coverage</div>
 
     <h3>Sections Scanned</h3>
-    <p>This report analyzed the following 18 standard 10-K sections:</p>
-    <ul style="margin-left: 20px;">
+    <ul>
         <li>Item 1: Business</li>
         <li>Item 1A: Risk Factors</li>
         <li>Item 1B: Unresolved Staff Comments</li>
@@ -366,7 +141,7 @@
         <li>Item 6: Selected Financial Data</li>
         <li>Item 7: Management's Discussion &amp; Analysis</li>
         <li>Item 7A: Quantitative &amp; Qualitative Market Risk</li>
-        <li>Item 8: Financial Statements &amp; Supplementary Data</li>
+        <li>Item 8: Financial Statements</li>
         <li>Item 9: Changes in Disagreements with Accountants</li>
         <li>Item 9A: Controls &amp; Procedures</li>
         <li>Item 9B: Other Information</li>
@@ -377,123 +152,141 @@
         <li>Item 14: Principal Accountant Fees &amp; Services</li>
     </ul>
 
-    <h3>Keyword Library</h3>
-    <p><strong>Total Keywords Scanned:</strong> 220+ across 6 risk categories</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Legal / Litigation:</strong> 45 keywords</li>
-        <li><strong>Regulatory / Compliance:</strong> 40 keywords</li>
-        <li><strong>Financial / Liquidity:</strong> 40 keywords</li>
-        <li><strong>Operational / Strategic:</strong> 40 keywords</li>
-        <li><strong>Governance / ESG:</strong> 30 keywords</li>
-        <li><strong>Forward-Looking / Uncertainty:</strong> 25 keywords</li>
-    </ul>
+    <h3>Keyword Library — v2.0 (220+ keywords, 6 categories)</h3>
+    <table>
+        <thead><tr><th>Category</th><th>Target Count</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Legal / Litigation</td><td>45</td><td>Lawsuits, settlements, indictments, securities fraud</td></tr>
+            <tr><td>Regulatory / Compliance</td><td>40</td><td>AML, GDPR, SOX 404, material weakness, enforcement actions</td></tr>
+            <tr><td>Financial / Liquidity</td><td>40</td><td>Going concern, covenant breach, goodwill impairment, cash burn</td></tr>
+            <tr><td>Operational / Strategic</td><td>40</td><td>Key person, concentration risk, supply disruption, product recall</td></tr>
+            <tr><td>Governance / ESG</td><td>30</td><td>Related party transactions, self-dealing, dual class shares</td></tr>
+            <tr><td>Forward-Looking / Uncertainty</td><td>25</td><td>No assurance, headwinds, recessionary conditions</td></tr>
+        </tbody>
+    </table>
 
-    <h3>Severity Scoring Logic</h3>
-    <p>Each finding is scored 0–100 based on:</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Base Score:</strong> 50</li>
-        <li><strong>+20</strong> if severity tier is HIGH (sentiment &lt; -0.25)</li>
-        <li><strong>-15</strong> if mitigating language present (e.g., "we believe", "resolved")</li>
-        <li><strong>+15</strong> if amplifying language present (e.g., "material adverse", "cannot guarantee")</li>
-        <li><strong>Final Score:</strong> Clamped to 0–100</li>
+    <h3>Severity Logic</h3>
+    <ul>
+        <li><strong>HIGH:</strong> Sentiment &lt; -0.25 or keyword in always-high list (e.g., going concern, material weakness).</li>
+        <li><strong>MEDIUM:</strong> Sentiment in [-0.25, -0.10) or mitigating language present.</li>
+        <li><strong>LOW:</strong> Sentiment &ge; -0.10 with no amplifying language.</li>
     </ul>
+    <p style="margin-top:5px;"><strong>Severity Score:</strong> Base 50 + 20 (HIGH) &minus; 15 (mitigating) + 15 (amplifying) + 10 (co-occurrence). Clamped 0&ndash;100.</p>
 
     <h3>Explanation Engine</h3>
-    <p>Each finding includes a 2-sentence explanation powered by Claude AI (if API key available) with rule-based fallback for offline analysis.</p>
+    <p>Each finding includes a 2-sentence analyst explanation powered by
+    <strong>Claude API (claude-haiku-4-5-20251001)</strong> when ANTHROPIC_API_KEY is set,
+    with deterministic rule-based fallback for offline runs.</p>
+
+    <h3>Source &amp; Filing</h3>
+    <table class="info-table">
+        <tr><td class="label">Source Type</td><td>{{ exchange }}</td></tr>
+        <tr><td class="label">Filing Date</td><td>{{ filing_date }}</td></tr>
+        <tr><td class="label">Previous Filing</td><td>{{ previous_date }}</td></tr>
+        <tr><td class="label">Sections with Flags</td><td>{{ sections_scanned | join(', ') if sections_scanned else 'None' }}</td></tr>
+    </table>
 </div>
 
-<!-- PAGES 3-5 — FINDINGS BY TIER -->
-{% set high_findings = findings_by_category.get('HIGH', []) %}
-{% set medium_findings = findings_by_category.get('MEDIUM', []) %}
-{% set low_findings = findings_by_category.get('LOW', []) %}
-
-<!-- PAGE 3: HIGH SEVERITY -->
+<!-- ═══ PAGE 3 — HIGH SEVERITY FINDINGS ═══ -->
 <div class="page">
-    <h2 style="color: #e74c3c; border-bottom-color: #e74c3c;">HIGH SEVERITY FINDINGS</h2>
+    <div class="divider red">HIGH SEVERITY FINDINGS &nbsp;({{ high_count }})</div>
     {% if high_findings %}
-        {% for finding in high_findings[:12] %}
+        {% for f in high_findings %}
         <div class="finding-card high">
-            <div class="finding-header">
-                <span class="finding-section">{{ finding.section }} | Page {{ finding.page_num }}</span>
-                <span class="finding-keyword">{{ finding.keyword }}</span>
-                <span style="color: #e74c3c; font-weight: 700;">{{ finding.severity }}</span>
+            <div class="finding-meta">
+                <span>{{ f.section }}</span>
+                <span>Page {{ f.page_num }}</span>
+                <span>Para {{ f.para_num }}</span>
+                <span>Sent {{ f.sentence_num }}</span>
+                <span>{{ f.category }}</span>
+                <span class="sev-badge high">HIGH</span>
             </div>
-            <div class="finding-context">
-                <div class="context-before">{{ finding.context_before }}</div>
-                <div class="flagged-sentence"><strong>{{ finding.flagged_sentence }}</strong></div>
-                <div class="context-after">{{ finding.context_after }}</div>
-            </div>
-            <div class="explanation">{{ finding.explanation }}</div>
+            {% if f.context_before %}<div class="ctx-before">{{ f.context_before }}</div>{% endif %}
+            <div class="flagged">{{ f.flagged_sentence | replace(f.keyword, '<strong>' ~ f.keyword ~ '</strong>') | safe }}</div>
+            {% if f.context_after %}<div class="ctx-after">{{ f.context_after }}</div>{% endif %}
+            <div class="explanation">{{ f.explanation }}</div>
         </div>
         {% endfor %}
     {% else %}
-        <p style="color: #27ae60;">No HIGH severity findings detected.</p>
+        <p style="color:#3B6D11; margin-top:10px;">No HIGH severity findings detected.</p>
     {% endif %}
 </div>
 
-<!-- PAGE 4: MEDIUM SEVERITY -->
+<!-- ═══ PAGE 4 — MEDIUM SEVERITY FINDINGS ═══ -->
 <div class="page">
-    <h2 style="color: #f39c12; border-bottom-color: #f39c12;">MEDIUM SEVERITY FINDINGS</h2>
+    <div class="divider amber">MEDIUM SEVERITY FINDINGS &nbsp;({{ medium_count }})</div>
     {% if medium_findings %}
-        {% for finding in medium_findings[:12] %}
+        {% for f in medium_findings %}
         <div class="finding-card medium">
-            <div class="finding-header">
-                <span class="finding-section">{{ finding.section }} | Page {{ finding.page_num }}</span>
-                <span class="finding-keyword">{{ finding.keyword }}</span>
-                <span style="color: #f39c12; font-weight: 700;">{{ finding.severity }}</span>
+            <div class="finding-meta">
+                <span>{{ f.section }}</span>
+                <span>Page {{ f.page_num }}</span>
+                <span>Para {{ f.para_num }}</span>
+                <span>Sent {{ f.sentence_num }}</span>
+                <span>{{ f.category }}</span>
+                <span class="sev-badge medium">MEDIUM</span>
             </div>
-            <div class="finding-context">
-                <div class="context-before">{{ finding.context_before }}</div>
-                <div class="flagged-sentence"><strong>{{ finding.flagged_sentence }}</strong></div>
-                <div class="context-after">{{ finding.context_after }}</div>
-            </div>
-            <div class="explanation">{{ finding.explanation }}</div>
+            {% if f.context_before %}<div class="ctx-before">{{ f.context_before }}</div>{% endif %}
+            <div class="flagged">{{ f.flagged_sentence | replace(f.keyword, '<strong>' ~ f.keyword ~ '</strong>') | safe }}</div>
+            {% if f.context_after %}<div class="ctx-after">{{ f.context_after }}</div>{% endif %}
+            <div class="explanation">{{ f.explanation }}</div>
         </div>
         {% endfor %}
     {% else %}
-        <p style="color: #27ae60;">No MEDIUM severity findings detected.</p>
+        <p style="color:#888; margin-top:10px;">No MEDIUM severity findings detected.</p>
     {% endif %}
 </div>
 
-<!-- PAGE 5: LOW SEVERITY -->
+<!-- ═══ PAGE 5 — LOW SEVERITY FINDINGS ═══ -->
 <div class="page">
-    <h2 style="color: #27ae60; border-bottom-color: #27ae60;">LOW SEVERITY FINDINGS</h2>
+    <div class="divider green">LOW SEVERITY FINDINGS &nbsp;({{ low_count }})</div>
     {% if low_findings %}
-        {% for finding in low_findings[:12] %}
+        {% for f in low_findings %}
         <div class="finding-card low">
-            <div class="finding-header">
-                <span class="finding-section">{{ finding.section }} | Page {{ finding.page_num }}</span>
-                <span class="finding-keyword">{{ finding.keyword }}</span>
-                <span style="color: #27ae60; font-weight: 700;">{{ finding.severity }}</span>
+            <div class="finding-meta">
+                <span>{{ f.section }}</span>
+                <span>Page {{ f.page_num }}</span>
+                <span>Para {{ f.para_num }}</span>
+                <span>Sent {{ f.sentence_num }}</span>
+                <span>{{ f.category }}</span>
+                <span class="sev-badge low">LOW</span>
             </div>
-            <div class="finding-context">
-                <div class="context-before">{{ finding.context_before }}</div>
-                <div class="flagged-sentence"><strong>{{ finding.flagged_sentence }}</strong></div>
-                <div class="context-after">{{ finding.context_after }}</div>
-            </div>
-            <div class="explanation">{{ finding.explanation }}</div>
+            {% if f.context_before %}<div class="ctx-before">{{ f.context_before }}</div>{% endif %}
+            <div class="flagged">{{ f.flagged_sentence | replace(f.keyword, '<strong>' ~ f.keyword ~ '</strong>') | safe }}</div>
+            {% if f.context_after %}<div class="ctx-after">{{ f.context_after }}</div>{% endif %}
+            <div class="explanation">{{ f.explanation }}</div>
         </div>
         {% endfor %}
     {% else %}
-        <p style="color: #999;">No LOW severity findings detected.</p>
+        <p style="color:#888; margin-top:10px;">No LOW severity findings detected.</p>
     {% endif %}
 </div>
 
-<!-- PAGE 6 — YoY COMPARISON -->
+<!-- ═══ PAGE 6 — YoY COMPARISON ═══ -->
 <div class="page">
-    <h2>Year-Over-Year Comparison</h2>
+    <div class="divider navy">Year-Over-Year Comparison</div>
 
     {% if has_previous %}
-        <h3>Category Trends</h3>
+        {% if overall %}
+        <p style="margin-bottom:10px;">
+            <strong>Overall Trajectory:</strong>
+            {% set traj = overall.get('trajectory', 'STABLE') %}
+            {% if traj == 'DETERIORATING' or traj == 'INCREASING' %}
+                <span class="traj-badge traj-deteri">{{ traj }}</span>
+            {% elif traj == 'IMPROVING' or traj == 'SIGNIFICANTLY IMPROVING' %}
+                <span class="traj-badge traj-improv">{{ traj }}</span>
+            {% else %}
+                <span class="traj-badge traj-stable">{{ traj }}</span>
+            {% endif %}
+            &nbsp; Prior Year: {{ overall.get('previous_total', '–') }} flags &rarr; This Year: {{ overall.get('current_total', '–') }} flags
+            ({{ '%+d' | format(overall.get('total_change', 0)) }})
+        </p>
+        {% endif %}
+
+        <h3>Category Breakdown</h3>
         <table>
             <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Prior Year</th>
-                    <th>This Year</th>
-                    <th>Change</th>
-                    <th>Trend</th>
-                </tr>
+                <tr><th>Category</th><th>Prior Year</th><th>This Year</th><th>Delta</th><th>Trajectory</th></tr>
             </thead>
             <tbody>
                 {% for cat_name, cat_data in category_grid.items() %}
@@ -501,7 +294,7 @@
                     <td><strong>{{ cat_name }}</strong></td>
                     <td>{{ cat_data.previous_count }}</td>
                     <td>{{ cat_data.current_count }}</td>
-                    <td style="font-weight: 700;">{{ cat_data.delta | default(0) }}</td>
+                    <td style="font-weight:bold;">{{ '%+d' | format(cat_data.change) }}</td>
                     <td>{{ cat_data.trajectory }}</td>
                 </tr>
                 {% endfor %}
@@ -509,55 +302,60 @@
         </table>
 
         <h3>Sentiment Trend</h3>
-        <div style="background: #f9f9f9; padding: 15px; border-radius: 4px;">
-            <p><strong>Direction:</strong> {{ sentiment_trend.direction }}</p>
-            <p><strong>Prior Year Sentiment:</strong> {{ sentiment_trend.previous | round(3) }}</p>
-            <p><strong>This Year Sentiment:</strong> {{ sentiment_trend.current | round(3) }}</p>
-            <p><strong>Trend:</strong> {{ sentiment_trend.sentiment_trend }}</p>
-        </div>
+        <table class="info-table">
+            <tr><td class="label">Direction</td><td><strong>{{ sentiment_trend.get('direction', '—') }}</strong></td></tr>
+            <tr><td class="label">Prior Year Avg Sentiment</td><td>{{ "%.3f" | format(sentiment_trend.get('previous', 0)) }}</td></tr>
+            <tr><td class="label">This Year Avg Sentiment</td><td>{{ "%.3f" | format(sentiment_trend.get('current', 0)) }}</td></tr>
+            <tr><td class="label">Summary</td><td>{{ sentiment_trend.get('sentiment_trend', '—') }}</td></tr>
+        </table>
 
-        <h3>New Keywords (Not in Prior Year)</h3>
+        <h3>New Keywords This Year (not in prior filing)</h3>
         {% if new_keywords %}
-            <div style="margin-top: 10px;">
-                {% for kw in new_keywords[:20] %}
-                <span class="keyword-pill">{{ kw }}</span>
+            <div style="margin-top:6px;">
+                {% for kw in new_keywords %}
+                <span class="kw-pill">{{ kw }}</span>
                 {% endfor %}
             </div>
         {% else %}
-            <p style="color: #999;">No new keywords detected.</p>
+            <p style="color:#888;">No new keywords detected.</p>
         {% endif %}
     {% else %}
-        <p style="background: #ffffcc; padding: 10px; border-radius: 4px;">No prior-year filing available for comparison. YoY analysis not possible.</p>
+        <p style="background:#fffbcc; padding:10px; border-radius:3px;">
+            No prior-year filing available. Year-over-year comparison not possible.
+        </p>
     {% endif %}
 </div>
 
-<!-- PAGE 7 — SOURCE & REPRODUCIBILITY -->
+<!-- ═══ PAGE 7 — SOURCE AND REPRODUCIBILITY ═══ -->
 <div class="page">
-    <h2>Source &amp; Reproducibility</h2>
+    <div class="divider navy">Source &amp; Reproducibility</div>
 
     <h3>Filing Source</h3>
-    <div class="header-info">
-        <div class="header-cell"><span class="header-label">Company</span><span>{{ ticker }}</span></div>
-        <div class="header-cell"><span class="header-label">Exchange</span><span>{{ exchange }}</span></div>
-        <div class="header-cell"><span class="header-label">Filing Date</span><span>{{ filing_date }}</span></div>
-        <div class="header-cell"><span class="header-label">Report Generated</span><span>{{ generated_date }}</span></div>
-    </div>
+    <table class="info-table">
+        <tr><td class="label">Company / Ticker</td><td>{{ ticker }}</td></tr>
+        <tr><td class="label">Exchange / Source</td><td>{{ exchange }}</td></tr>
+        <tr><td class="label">Filing Date</td><td>{{ filing_date }}</td></tr>
+        <tr><td class="label">Report Generated</td><td>{{ generated_date }}</td></tr>
+    </table>
 
     <h3>Analysis Details</h3>
-    <ul style="margin-left: 20px;">
-        <li>Keyword Library Version: 2.0 (220+ keywords, 6 categories)</li>
-        <li>Sections Analyzed: 18 standard 10-K items</li>
-        <li>Severity Scoring: Rule-based (0–100 scale)</li>
-        <li>Explanation Engine: Claude API (Haiku 4.5) with fallback templates</li>
-        <li>Year-over-Year Comparison: Enabled{% if has_previous %} (prior year available){% else %} (prior year NOT available){% endif %}</li>
+    <ul>
+        <li>Keyword Library: v2.0 — 220+ keywords across 6 categories</li>
+        <li>Sections Analyzed: All 18 standard 10-K items</li>
+        <li>Severity Scoring: Rule-based, clamped 0–100</li>
+        <li>Explanation Engine: Claude API (claude-haiku-4-5-20251001) + fallback templates</li>
+        <li>Year-over-Year: {% if has_previous %}Enabled (prior-year filing available){% else %}Disabled (no prior-year filing){% endif %}</li>
     </ul>
 
-    <h3>GitHub Repository</h3>
-    <p>RedFlag is open-source. For source code, documentation, and to contribute:<br>
-    <strong>github.com/zshqv/RedFlag</strong></p>
+    <h3>Open Source</h3>
+    <p><strong>github.com/zshqv/RedFlag</strong> — MIT License</p>
+    <p>Companion product: <strong>trikosh.io</strong> — Trikosh tells you what a company looks like. RedFlag tells you what's wrong with it.</p>
 
     <div class="disclaimer">
-        <strong>⚠ DISCLAIMER:</strong> This report is not financial advice and should not be relied upon as the sole basis for investment decisions. RedFlag is a due diligence co-pilot designed to highlight linguistic risk anomalies in SEC filings. All findings are keyword-based and should be validated by human analysts familiar with the company and industry. This tool is intended for consultant, analyst, and institutional investor use only. Use at your own risk.
+        <strong>DISCLAIMER:</strong> This report is not financial advice and must not be relied upon as the sole basis
+        for investment decisions. RedFlag is a due diligence co-pilot that highlights linguistic risk anomalies in
+        financial filings. All findings are keyword-based and must be validated by qualified human analysts familiar
+        with the company and its industry context. Not financial advice. For due diligence purposes only.
     </div>
 </div>
 
