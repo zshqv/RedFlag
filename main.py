@@ -15,7 +15,7 @@ import os
 import time
 import subprocess
 
-from fetchers.fetcher_router import fetch_filing
+from edgar_fetcher import fetch_10k
 from text_parser import extract_sections
 from risk_analyzer import analyze_filings
 from comparator import compare_years
@@ -76,7 +76,7 @@ def run_redflag(ticker):
     start = time.time()
 
     print("[RedFlag] Step 1/7: Fetching filing...")
-    result = fetch_filing(ticker)
+    result = fetch_10k(ticker)
     if not result:
         print(f"[RedFlag] ERROR: Could not fetch filing for '{ticker}'")
         return None

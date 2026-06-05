@@ -5,7 +5,6 @@
 import re
 from textblob import TextBlob
 from keywords import KEYWORDS
-from flag_explainer import explain_finding
 
 _SECTION_PRIORITY = {
     "risk factor": 0,
@@ -160,7 +159,6 @@ def scan_section(section_name, section_data, all_findings):
                         "explanation": "",
                     }
 
-                    finding["explanation"] = explain_finding(finding)
                     findings.append(finding)
                     break  # one keyword per category per sentence
 

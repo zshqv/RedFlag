@@ -6,7 +6,6 @@ import os
 import math
 from datetime import datetime
 
-import jinja2
 
 OUTPUT_DIR = "output"
 
@@ -233,17 +232,7 @@ def generate_html_report(ticker, analysis, comparison, latest_date, exchange, pr
     ensure_output_dir()
     html_path    = os.path.join(OUTPUT_DIR, f"{ticker}_report.html")
     ctx          = _build_pdf_context(ticker, analysis, comparison, latest_date, exchange, previous_date)
-    template_dir = os.path.dirname(os.path.abspath(__file__))
-
-    try:
-        env      = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir),
-            autoescape=False,
-        )
-        html_str = env.get_template("pdf_template.html").render(**ctx)
-    except Exception as e:
-        print(f"[RedFlag] Template render failed ({e}); using fallback HTML.")
-        html_str = _build_fallback_html(ctx)
+    html_str = _build_fallback_html(ctx)
 
     with open(html_path, "w", encoding="utf-8") as fh:
         fh.write(html_str)
