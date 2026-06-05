@@ -1,12 +1,9 @@
 requests
 beautifulsoup4
 textblob
-openpyxl
 fpdf2
 pdfplumber
-python-pptx
 jinja2
 weasyprint
 anthropic
-lxml
 html5lib

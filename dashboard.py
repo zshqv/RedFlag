@@ -49,9 +49,8 @@ def _run_pipeline(ticker):
 # ─── Streamlit app ────────────────────────────────────────────────────────────
 
 def run_app():
-    from report_generator import (generate_reports, generate_comparison_excel,
-                                   generate_comparison_pdf)
-    from deck_generator import generate_deck, generate_comparison_deck
+    from report_generator import generate_reports
+    from glossary_generator import generate_glossary_pdf
     from trend_analyzer import analyze_trend
     from watchlist import load_watchlist, save_watchlist
 
@@ -104,9 +103,9 @@ def run_app():
         st.divider()
         st.subheader("Watchlist")
 
-        wl_tickers   = load_watchlist()
-        add_input    = st.text_input("Add ticker", placeholder="e.g. AAPL")
-        add_btn      = st.button("Add to Watchlist")
+        wl_tickers = load_watchlist()
+        add_input  = st.text_input("Add ticker", placeholder="e.g. AAPL")
+        add_btn    = st.button("Add to Watchlist")
 
         if add_btn and add_input.strip():
             t = add_input.strip().upper()
@@ -162,7 +161,7 @@ def run_app():
                     st.warning("No risk findings identified. "
                                "The filing may not have been parsed correctly.")
 
-                rpt_paths = generate_reports(
+                rpt_paths    = generate_reports(
                     ticker        = result["ticker"],
                     analysis      = analysis,
                     comparison    = comparison,
@@ -170,22 +169,16 @@ def run_app():
                     previous_date = result["previous"]["date"],
                     exchange      = result.get("exchange", "NYSE/NASDAQ"),
                 )
-                pptx_path = generate_deck(
-                    ticker      = result["ticker"],
-                    analysis    = analysis,
-                    comparison  = comparison,
-                    latest_date = result["latest"]["date"],
-                    exchange    = result.get("exchange", "NYSE/NASDAQ"),
-                )
+                glossary_path = generate_glossary_pdf(analysis, result["ticker"])
+
                 st.session_state.results = {
-                    "ticker":      result["ticker"],
-                    "analysis":    analysis,
-                    "comparison":  comparison,
-                    "latest_date": result["latest"]["date"],
-                    "exchange":    result.get("exchange", "NYSE/NASDAQ"),
-                    "excel_path":  rpt_paths.get("excel"),
-                    "pdf_path":    rpt_paths.get("pdf"),
-                    "pptx_path":   pptx_path,
+                    "ticker":       result["ticker"],
+                    "analysis":     analysis,
+                    "comparison":   comparison,
+                    "latest_date":  result["latest"]["date"],
+                    "exchange":     result.get("exchange", "NYSE/NASDAQ"),
+                    "html_path":    rpt_paths.get("html"),
+                    "glossary_path": glossary_path,
                 }
                 st.session_state.mode = "single"
         else:
@@ -224,7 +217,7 @@ def run_app():
             summary = r["analysis"].get("summary", {})
             st.markdown("#### Executive Verdict")
             if summary:
-                top_cat = max(summary, key=summary.get)
+                top_cat    = max(summary, key=summary.get)
                 sent_trend = (comparison.get("sentiment_trend", {})
                               .get("sentiment_trend", "N/A"))
                 st.write(
@@ -294,41 +287,25 @@ def run_app():
 
         st.divider()
         st.markdown("#### Download Reports")
-        dc1, dc2, dc3 = st.columns(3)
-        if r.get("excel_path") and os.path.exists(r["excel_path"]):
+        dc1, dc2 = st.columns(2)
+        if r.get("html_path") and os.path.exists(r["html_path"]):
             dc1.download_button(
-                "Download Excel",
-                data=_read_bytes(r["excel_path"]),
-                file_name=os.path.basename(r["excel_path"]),
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Download HTML Report",
+                data=_read_bytes(r["html_path"]),
+                file_name=os.path.basename(r["html_path"]),
+                mime="text/html",
             )
-        if r.get("pdf_path") and os.path.exists(r["pdf_path"]):
+        if r.get("glossary_path") and os.path.exists(r["glossary_path"]):
             dc2.download_button(
-                "Download PDF",
-                data=_read_bytes(r["pdf_path"]),
-                file_name=os.path.basename(r["pdf_path"]),
+                "Download Glossary PDF",
+                data=_read_bytes(r["glossary_path"]),
+                file_name=os.path.basename(r["glossary_path"]),
                 mime="application/pdf",
-            )
-        if r.get("pptx_path") and os.path.exists(r["pptx_path"]):
-            dc3.download_button(
-                "Download PPTX",
-                data=_read_bytes(r["pptx_path"]),
-                file_name=os.path.basename(r["pptx_path"]),
-                mime=("application/vnd.openxmlformats-officedocument"
-                      ".presentationml.presentation"),
             )
 
     # ─── Comparison results ────────────────────────────────────────────────────
     elif st.session_state.mode == "compare" and st.session_state.cmp_results:
         out_tickers, cmp_results = st.session_state.cmp_results
-
-        with st.spinner("Building comparison reports..."):
-            excel_path = generate_comparison_excel(
-                tickers=out_tickers, results_list=cmp_results)
-            pdf_path   = generate_comparison_pdf(
-                tickers=out_tickers, results_list=cmp_results)
-            pptx_path  = generate_comparison_deck(
-                tickers=out_tickers, results_list=cmp_results)
 
         st.subheader("Peer Comparison — Risk Analysis")
         st.caption(f"Companies: {', '.join(out_tickers)}")
@@ -353,31 +330,10 @@ def run_app():
                   .reset_index(drop=True))
         st.dataframe(df_cmp, use_container_width=True)
 
-        st.divider()
-        st.markdown("#### Download Comparison Reports")
-        dc1, dc2, dc3 = st.columns(3)
-        if os.path.exists(excel_path):
-            dc1.download_button(
-                "Download Excel",
-                data=_read_bytes(excel_path),
-                file_name=os.path.basename(excel_path),
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-        if os.path.exists(pdf_path):
-            dc2.download_button(
-                "Download PDF",
-                data=_read_bytes(pdf_path),
-                file_name=os.path.basename(pdf_path),
-                mime="application/pdf",
-            )
-        if os.path.exists(pptx_path):
-            dc3.download_button(
-                "Download PPTX",
-                data=_read_bytes(pptx_path),
-                file_name=os.path.basename(pptx_path),
-                mime=("application/vnd.openxmlformats-officedocument"
-                      ".presentationml.presentation"),
-            )
+        st.info(
+            "Individual HTML reports and Glossary PDFs for each ticker "
+            "are saved in the output/ folder."
+        )
 
     # ─── Welcome screen ────────────────────────────────────────────────────────
     else:
@@ -396,7 +352,7 @@ def run_app():
         - Year-over-year trajectory analysis
         - Confidence scoring on every finding
         - 5-year trend analysis
-        - Export to Excel, PDF, and PowerPoint
+        - Export to HTML report and Glossary PDF
         """)
 
 

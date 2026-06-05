@@ -20,6 +20,7 @@ from text_parser import extract_sections
 from risk_analyzer import analyze_filings
 from comparator import compare_years
 from report_generator import generate_reports
+from glossary_generator import generate_glossary_pdf
 
 
 def print_banner():
@@ -105,11 +106,15 @@ def run_redflag(ticker):
     comparison = compare_years(latest_analysis, prev_analysis)
     comparison["exchange"] = exchange
 
-    print("[RedFlag] Step 6/7: Generating reports (Excel, PDF, PPTX)...")
+    print("[RedFlag] Step 6/7: Generating HTML report...")
     paths = generate_reports(
         ticker_clean, latest_analysis, comparison,
         latest_date, previous_date, exchange
     )
+
+    print("[RedFlag] Step 7/7: Generating glossary PDF...")
+    glossary_path = generate_glossary_pdf(latest_analysis, ticker_clean)
+    paths["glossary"] = glossary_path
 
     elapsed = time.time() - start
     summ    = latest_analysis["summary"]

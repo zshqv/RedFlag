@@ -221,6 +221,11 @@ __marimo__/
 output/
 *.pdf
 *.xlsx
+*.pptx
+
+# Allow curated case-study files
+!case-studies/*.pdf
+!case-studies/*.html
 
 # Python cache
 __pycache__/

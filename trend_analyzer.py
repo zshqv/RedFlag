@@ -1,7 +1,4 @@
-import os
 import time
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
 
 CATEGORIES = ["Financial", "Regulatory", "Operational", "Legal"]
 
@@ -65,78 +62,6 @@ def analyze_trend(ticker):
         trend[cat] = [results[y].get(cat, 0) for y in years_sorted]
 
     return trend
-
-
-def add_trend_sheet(wb, trend_data):
-    """Add a '5-Year Trend' sheet to an openpyxl workbook."""
-    ws = wb.create_sheet("5-Year Trend")
-
-    if "error" in trend_data:
-        cell = ws["A1"]
-        cell.value = str(trend_data["error"])
-        cell.font  = Font(name="Calibri", italic=True, color="AA0000")
-        return
-
-    years = trend_data.get("years", [])
-
-    NAVY = "1A1A2E"
-    CAT_COLORS = {
-        "Financial":   "2980B9",
-        "Regulatory":  "D35400",
-        "Operational": "16A085",
-        "Legal":       "8E44AD",
-    }
-
-    # Header row: Category label + one column per year
-    hdr = ws.cell(row=1, column=1)
-    hdr.value     = "Category"
-    hdr.font      = Font(name="Calibri", bold=True, color="FFFFFF")
-    hdr.fill      = PatternFill(start_color=NAVY, end_color=NAVY, fill_type="solid")
-    hdr.alignment = Alignment(horizontal="center")
-    ws.column_dimensions["A"].width = 16
-
-    for ci, year in enumerate(years, 2):
-        cell = ws.cell(row=1, column=ci)
-        cell.value     = str(year)
-        cell.font      = Font(name="Calibri", bold=True, color="FFFFFF")
-        cell.fill      = PatternFill(start_color=NAVY, end_color=NAVY, fill_type="solid")
-        cell.alignment = Alignment(horizontal="center")
-        ws.column_dimensions[openpyxl.utils.get_column_letter(ci)].width = 12
-
-    # One row per category
-    for ri, cat in enumerate(CATEGORIES, 2):
-        cat_cell           = ws.cell(row=ri, column=1)
-        cat_cell.value     = cat
-        cat_cell.font      = Font(name="Calibri", bold=True, color="FFFFFF")
-        cat_cell.fill      = PatternFill(
-            start_color=CAT_COLORS.get(cat, NAVY),
-            end_color=CAT_COLORS.get(cat, NAVY),
-            fill_type="solid"
-        )
-        cat_cell.alignment = Alignment(horizontal="center")
-        ws.row_dimensions[ri].height = 22
-
-        counts    = trend_data.get(cat, [])
-        max_count = max(counts) if counts else 1
-
-        for ci, count in enumerate(counts, 2):
-            cell           = ws.cell(row=ri, column=ci)
-            cell.value     = count
-            cell.alignment = Alignment(horizontal="center")
-            cell.font      = Font(name="Calibri", bold=True)
-            if max_count > 0 and count > 0:
-                ratio = count / max_count
-                if ratio >= 0.7:
-                    bg = "FF4444"
-                elif ratio >= 0.4:
-                    bg = "FF8C00"
-                else:
-                    bg = "D4EFDF"
-            else:
-                bg = "F5F5F5"
-            cell.fill = PatternFill(start_color=bg, end_color=bg, fill_type="solid")
-
-    ws.row_dimensions[1].height = 20
 
 
 if __name__ == "__main__":
