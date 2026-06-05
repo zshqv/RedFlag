@@ -2,8 +2,4 @@ requests
 beautifulsoup4
 textblob
 fpdf2
-pdfplumber
-jinja2
-weasyprint
-anthropic
-html5lib
+pandas
