@@ -89,6 +89,11 @@ Every paid financial data provider — Bloomberg, FactSet, Capital IQ — is res
 
 RedFlag is built alongside **Trikosh** — an open-source financial research platform covering 30 global companies across Financial Services, AI, and Healthcare. Trikosh tells you what a company looks like. RedFlag tells you what's wrong with it.
 
+| Tool | Purpose | GitHub |
+|---|---|---|
+| Trikosh | Map the financial landscape | — |
+| PitchOS | Build the M&A case | github.com/zshqv/PitchOS |
+
 ---
 
 ## Roadmap
