@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RedFlag &#8212; C</title>
+<style>
+    @page { size: A4; margin: 18mm 15mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #222; background: white; line-height: 1.5; }
+
+    .page { page-break-before: always; padding-bottom: 20px; }
+    .page-first { page-break-before: avoid; }
+
+    /* Cover header */
+    .cover-header {
+        background: #1a1a2e;
+        margin-top: -18mm;
+        margin-left: -15mm;
+        margin-right: -15mm;
+        padding: calc(18mm + 16px) calc(15mm + 12px) 20px;
+    }
+    .cover-header-inner { position: relative; }
+    .cover-topright { position: absolute; top: 0; right: 0; text-align: right; font-size: 9pt; color: #9999bb; line-height: 1.6; }
+    .cover-company { font-size: 28pt; font-weight: 500; color: #ffffff; margin-bottom: 5px; }
+    .cover-meta { font-size: 11pt; color: #9999bb; margin-bottom: 12px; }
+
+    /* Verdict pill */
+    .verdict-pill { display: inline-block; padding: 5px 16px; border-radius: 3px; font-weight: bold; font-size: 13pt; color: #ffffff; }
+    .verdict-red   { background: #E24B4A; }
+    .verdict-amber { background: #EF9F27; }
+    .verdict-green { background: #3B6D11; }
+
+    /* 6-cell stat grid */
+    .stat-grid { width: 100%; border-collapse: collapse; margin: 14px 0; }
+    .stat-grid td { border: 1px solid #ddd; padding: 10px 8px; text-align: center; vertical-align: top; width: 16.6%; }
+    .stat-num { font-size: 22pt; font-weight: bold; color: #1a1a2e; line-height: 1.2; }
+    .stat-num.red   { color: #E24B4A; }
+    .stat-num.amber { color: #EF9F27; }
+    .stat-num.green { color: #3B6D11; }
+    .stat-label { font-size: 8pt; color: #666; margin-top: 3px; }
+    .stat-delta { font-size: 9pt; color: #888; }
+
+    /* Bottom line box */
+    .bottom-line-box {
+        border-left: 3px solid #1a1a2e;
+        background: #f5f5f5;
+        padding: 12px 16px;
+        margin-top: 14px;
+        font-size: 13pt;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    /* Page footer */
+    .page-footer { text-align: right; font-size: 9pt; color: #999; margin-top: 18px; }
+
+    /* Section title */
+    .section-title {
+        font-size: 14pt;
+        font-weight: 500;
+        color: #1a1a2e;
+        border-bottom: 2px solid #1a1a2e;
+        padding-bottom: 5px;
+        margin-bottom: 14px;
+    }
+    .section-subtitle { font-size: 10pt; color: #666; margin-bottom: 12px; margin-top: -10px; }
+
+    /* Heat map bars */
+    .heatmap-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+    .heatmap-table td { padding: 3px 6px; vertical-align: middle; }
+    .hm-label { font-size: 10pt; color: #333; width: 28%; }
+    .hm-bar-cell { width: 48%; }
+    .hm-bar-bg { background: #eeeeee; height: 16px; width: 100%; }
+    .hm-bar { height: 16px; }
+    .hm-count { font-size: 10pt; font-weight: bold; text-align: center; width: 8%; }
+    .hm-delta { font-size: 11pt; text-align: center; width: 8%; font-weight: bold; }
+
+    /* Tier chips */
+    .tier-chip { display: inline-block; padding: 4px 12px; font-weight: bold; font-size: 10pt; color: #ffffff; margin-right: 6px; }
+    .chip-red   { background: #E24B4A; }
+    .chip-amber { background: #EF9F27; }
+    .chip-green { background: #3B6D11; }
+
+    /* Section divider */
+    .divider { padding: 6px 12px; margin: 14px 0 8px; font-weight: bold; font-size: 12pt; color: white; }
+    .div-navy  { background: #1a1a2e; }
+    .div-red   { background: #E24B4A; border-left: 4px solid #a83331; }
+    .div-amber { background: #EF9F27; border-left: 4px solid #a36e1b; }
+    .div-green { background: #3B6D11; border-left: 4px solid #254809; }
+
+    /* Finding cards */
+    .card { margin: 8px 0; page-break-inside: avoid; }
+    .card-header { padding: 5px 10px; font-size: 9pt; font-weight: bold; color: #ffffff; }
+    .card-header.high   { background: #E24B4A; }
+    .card-header.medium { background: #EF9F27; }
+    .card-header.low    { background: #3B6D11; }
+    .kw-pill { display: inline-block; background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 2px; margin-left: 8px; font-size: 8pt; }
+
+    .ctx-block { border-left: 3px solid #cccccc; padding: 4px 8px; margin: 3px 0; font-style: italic; color: #888888; font-size: 9pt; }
+
+    .flagged-high   { background: #fff5f5; border-left: 3px solid #E24B4A; padding: 6px 10px; margin: 3px 0; font-size: 11pt; }
+    .flagged-medium { background: #fffbf0; border-left: 3px solid #EF9F27; padding: 6px 10px; margin: 3px 0; font-size: 11pt; }
+    .flagged-low    { background: #f4faf4; border-left: 3px solid #3B6D11; padding: 6px 10px; margin: 3px 0; font-size: 11pt; }
+
+    .why-box { background: #f5f5f5; padding: 8px 12px; margin: 3px 0; font-size: 11pt; line-height: 1.6; color: #333333; }
+
+    /* New keyword cards */
+    .kw-card { border-left: 3px solid #1a1a2e; padding: 8px 12px; margin: 6px 0; background: #fafafa; page-break-inside: avoid; }
+    .kw-card-name { font-size: 12pt; font-weight: bold; color: #1a1a2e; }
+    .sev-score { display: inline-block; font-size: 9pt; color: #666; margin-left: 8px; }
+    .kw-desc { font-size: 10pt; color: #555; margin-top: 4px; line-height: 1.5; }
+    .dot-legend { font-size: 9pt; color: #666; margin-top: 12px; }
+    .dot-high { color: #E24B4A; }
+    .dot-mid  { color: #EF9F27; }
+    .dot-low  { color: #3B6D11; }
+
+    /* Dashboard */
+    .dash-title { font-size: 16pt; font-weight: bold; color: #1a1a2e; text-align: center; margin-bottom: 14px; }
+    .dash-rule  { border: none; border-top: 1px solid #cccccc; margin: 14px 0; }
+    .three-raise-item { margin: 10px 0; page-break-inside: avoid; }
+    .raise-num  { font-size: 14pt; font-weight: bold; color: #1a1a2e; margin-right: 6px; }
+    .raise-text { font-size: 13pt; color: #222; line-height: 1.5; }
+    .raise-tag  { display: inline-block; font-size: 9pt; color: #888; background: #f0f0f0; padding: 2px 8px; margin-top: 3px; }
+
+    /* Source table */
+    .source-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+    .source-table td { padding: 6px 10px; border-bottom: 1px solid #eeeeee; vertical-align: top; }
+    .source-table td.lbl { font-size: 10pt; color: #999999; width: 38%; background: #fafafa; }
+    .source-table td.val { font-size: 12pt; color: #222; }
+
+    .full-disclaimer { font-size: 9pt; color: #888888; margin-top: 16px; line-height: 1.6; background: #f5f5f5; padding: 10px 12px; }
+    .low-note { font-size: 9pt; color: #888; font-style: italic; margin: 6px 0 10px; }
+
+    .yoy-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10pt; }
+    .yoy-table th { background: #1a1a2e; color: white; padding: 5px 8px; text-align: left; }
+    .yoy-table td { padding: 5px 8px; border-bottom: 1px solid #eeeeee; }
+</style>
+</head>
+<body>
+<div class="page-first">
+  <div class="cover-header">
+    <div class="cover-header-inner">
+      <div class="cover-topright">RedFlag v2.0<br>2026-06-23</div>
+      <div class="cover-company">C</div>
+      <div class="cover-meta">C &nbsp;&middot;&nbsp; 10-K / Annual Report &nbsp;&middot;&nbsp; 2026-02-20 &nbsp;&middot;&nbsp; Unknown</div>
+      <div class="verdict-pill verdict-red">HIGH RISK</div>
+    </div>
+  </div>
+<table class="stat-grid"><tr><td><div class="stat-num">94</div><div class="stat-label">Total flags</div></td><td><div class="stat-num red">2</div><div class="stat-label">High severity</div></td><td><div class="stat-num">21</div><div class="stat-label">New keywords</div></td><td><div class="stat-num amber">40</div><div class="stat-label">Regulatory flags</div></td><td><div class="stat-num amber">1</div><div class="stat-label">Legal flags</div></td><td><div class="stat-num green">0.033</div><div class="stat-label">Avg sentiment</div></td></tr></table>
+  <div class="bottom-line-box">Financial exposure has stable year-over-year, with "consent order" representing the highest-severity flag. 21 new keyword(s) — including "Sarbanes-Oxley" — suggest a changing disclosure posture not present in the prior filing.</div>
+  <div class="page-footer">Not financial advice &nbsp;&middot;&nbsp; For due diligence purposes only &nbsp;&middot;&nbsp; RedFlag &nbsp;&middot;&nbsp; github.com/zshqv/RedFlag</div>
+</div>
+<div class="page">
+  <div class="section-title">Risk exposure &#8212; category breakdown</div>
+<table class="heatmap-table"><tr><td class="hm-label">Regulatory</td><td class="hm-bar-cell"><div class="hm-bar-bg"><div class="hm-bar" style="background:#E24B4A;width:85%;"></div></div></td><td class="hm-count">40</td><td class="hm-delta" style="color:#E24B4A;">&#8593;</td></tr></table>
+<table class="heatmap-table"><tr><td class="hm-label">Financial</td><td class="hm-bar-cell"><div class="hm-bar-bg"><div class="hm-bar" style="background:#E24B4A;width:100%;"></div></div></td><td class="hm-count">47</td><td class="hm-delta" style="color:#E24B4A;">&#8593;</td></tr></table>
+<table class="heatmap-table"><tr><td class="hm-label">Forward-Looking</td><td class="hm-bar-cell"><div class="hm-bar-bg"><div class="hm-bar" style="background:#E24B4A;width:6%;"></div></div></td><td class="hm-count">3</td><td class="hm-delta" style="color:#E24B4A;">&#8593;</td></tr></table>
+<table class="heatmap-table"><tr><td class="hm-label">Legal</td><td class="hm-bar-cell"><div class="hm-bar-bg"><div class="hm-bar" style="background:#E24B4A;width:2%;"></div></div></td><td class="hm-count">1</td><td class="hm-delta" style="color:#E24B4A;">&#8593;</td></tr></table>
+<table class="heatmap-table"><tr><td class="hm-label">Governance</td><td class="hm-bar-cell"><div class="hm-bar-bg"><div class="hm-bar" style="background:#E24B4A;width:6%;"></div></div></td><td class="hm-count">3</td><td class="hm-delta" style="color:#E24B4A;">&#8593;</td></tr></table>
+  <div style="margin:14px 0 16px;"><span class="tier-chip chip-red">HIGH &nbsp;&middot;&nbsp; 2 flags</span><span class="tier-chip chip-amber">MEDIUM &nbsp;&middot;&nbsp; 8 flags</span><span class="tier-chip chip-green">LOW &nbsp;&middot;&nbsp; 84</span></div>
+<div class="divider div-red">High severity findings &nbsp;(2)</div>
+<div class="card">
+<div class="card-header high">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 158 &nbsp;&middot;&nbsp; Sent 245<span class="kw-pill">consent order</span></div>
+<div class="flagged-high">In 2024 the FRB entered into a Civil Money Penalty Consent Order with Citigroup in the amount of approximately $61 million, having found that Citigroup had ongoing deficiencies related to its data quality management program and inadequate measures for managing and controlling its data quality risks; and the OCC entered into a Civil Money Penalty Consent Order with Citibank, a wholly owned subsidiary of Citigroup, in the amount of $75 million, having found that Citibank had failed to make suffici...</div>
+<div class="ctx-block">The OCC and Citibank also entered into an amendment to the October 7, 2020 OCC Consent Order (the Amendment), which the OCC terminated on December 18, 2025. For additional information on the 2024 Consent Orders and the Amendment, see Citi’s July 10, ...</div>
+</div>
+<div class="card">
+<div class="card-header high">Item 7A &nbsp;&middot;&nbsp; Page 332 &nbsp;&middot;&nbsp; Para 186 &nbsp;&middot;&nbsp; Sent 255<span class="kw-pill">goodwill impairment</span></div>
+<div class="flagged-high">(5)    2025 includes (i) an approximate $ 186  million loss recorded in revenue (approximately $ 157  million after-tax), driven by the announced sale of the Poland consumer banking business; and (ii) approximately $ 877  million in operating expenses (approximately $ 821  million after-tax), driven by a goodwill impairment charge in Mexico ($ 726  million ($ 714  million after-tax)) and other costs, primarily separation costs in Mexico and severance costs in the Asia exit markets (collectively ...</div>
+</div>
+</div>
+<div class="page">
+<div class="divider div-red">High severity findings &nbsp;(2)</div>
+<div class="card">
+<div class="card-header high">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 158 &nbsp;&middot;&nbsp; Sent 245<span class="kw-pill">consent order</span></div>
+<div class="flagged-high">In 2024 the FRB entered into a Civil Money Penalty Consent Order with Citigroup in the amount of approximately $61 million, having found that Citigroup had ongoing deficiencies related to its data quality management program and inadequate measures for managing and controlling its data quality risks; and the OCC entered into a Civil Money Penalty Consent Order with Citibank, a wholly owned subsidiary of Citigroup, in the amount of $75 million, having found that Citibank had failed to make suffici...</div>
+<div class="ctx-block">The OCC and Citibank also entered into an amendment to the October 7, 2020 OCC Consent Order (the Amendment), which the OCC terminated on December 18, 2025. For additional information on the 2024 Consent Orders and the Amendment, see Citi’s July 10, ...</div>
+</div>
+<div class="card">
+<div class="card-header high">Item 7A &nbsp;&middot;&nbsp; Page 332 &nbsp;&middot;&nbsp; Para 186 &nbsp;&middot;&nbsp; Sent 255<span class="kw-pill">goodwill impairment</span></div>
+<div class="flagged-high">(5)    2025 includes (i) an approximate $ 186  million loss recorded in revenue (approximately $ 157  million after-tax), driven by the announced sale of the Poland consumer banking business; and (ii) approximately $ 877  million in operating expenses (approximately $ 821  million after-tax), driven by a goodwill impairment charge in Mexico ($ 726  million ($ 714  million after-tax)) and other costs, primarily separation costs in Mexico and severance costs in the Asia exit markets (collectively ...</div>
+</div>
+<div class="divider div-amber">Medium severity findings &nbsp;(8)</div>
+<div class="card">
+<div class="card-header medium">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 137 &nbsp;&middot;&nbsp; Sent 214<span class="kw-pill">consent order</span></div>
+<div class="flagged-medium">As previously disclosed, Citi’s transformation, including the remediation of its consent orders with the FRB and OCC, is a multiyear endeavor that is not linear.</div>
+<div class="ctx-block">Citi is modernizing and simplifying the Company in order to lead in a dynamic, competitive and digital world. Citi’s transformation goes beyond remedying regulatory concerns to intentionally transform how the organization operates, and makes investme...</div>
+</div>
+<div class="card">
+<div class="card-header medium">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 166 &nbsp;&middot;&nbsp; Sent 226<span class="kw-pill">bankruptcy</span></div>
+<div class="ctx-block">Citigroup is required under Title I of the Dodd-Frank Wall Street Reform and Consumer Protection Act of 2010 (Dodd-Frank Act) and the rules promulgated by the FDIC and FRB to periodically submit a plan for Citi’s rapid and orderly resolution under th...</div>
+<div class="flagged-medium">Bankruptcy Code in the event of material financial distress or failure.</div>
+<div class="ctx-block">For additional information on risks related to the application of resolution plan requirements, see “Risk Factors—Strategic Risks” above. Citigroup alternates between submitting a full resolution plan and a targeted resolution plan on a biennial cycl...</div>
+</div>
+<div class="card">
+<div class="card-header medium">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 169 &nbsp;&middot;&nbsp; Sent 234<span class="kw-pill">bankruptcy</span></div>
+<div class="flagged-medium">The FDIC has also indicated that it was developing a single point of entry strategy to implement the Orderly Liquidation Authority under Title II of the Dodd-Frank Act, which provides the FDIC with the ability to resolve a firm when it is determined that bankruptcy would have serious adverse effects on financial stability in the U.S.</div>
+</div>
+<div class="card">
+<div class="card-header medium">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 237 &nbsp;&middot;&nbsp; Sent 358<span class="kw-pill">regulatory capital</span></div>
+<div class="ctx-block">Citi measures the potential impacts of changes in interest rates on the value of its AOCI , which can in turn impact Citi’s common equity and tangible common equity.</div>
+<div class="flagged-medium">This will impact Citi’s CET1 and other regulatory capital ratios.</div>
+<div class="ctx-block">Citi seeks to manage its exposure to changes in the market level of interest rates, while limiting the potential impact on its AOCI and regulatory capital position.</div>
+</div>
+</div>
+<div class="page">
+<div class="divider div-amber">Medium severity findings (continued)</div>
+<div class="card">
+<div class="card-header medium">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 397 &nbsp;&middot;&nbsp; Sent 661<span class="kw-pill">default</span></div>
+<div class="flagged-medium">Master netting agreement: A single agreement with a counterparty that permits multiple transactions governed by that agreement to be terminated or accelerated and settled through a single payment in a single currency in the event of a default (e.g., bankruptcy, failure to make a required payment or securities transfer or deliver collateral or margin when due).</div>
+</div>
+<div class="card">
+<div class="card-header medium">Item 7A &nbsp;&middot;&nbsp; Page 332 &nbsp;&middot;&nbsp; Para 35 &nbsp;&middot;&nbsp; Sent 57<span class="kw-pill">regulatory approval</span></div>
+<div class="ctx-block">On May 27, 2025, Citi entered into an agreement to sell its Poland consumer banking business, which is part of All Other —Legacy Franchises.</div>
+<div class="flagged-medium">The sale, which is subject to regulatory approvals and other customary closing conditions, is expected to close by mid-2026.</div>
+<div class="ctx-block">Beginning in the second quarter of 2025, Citi reported the business as HFS. During 2025, Citi recognized a pretax loss on sale of approximately $ 181  million recorded in Other revenue ($ 138  million after-tax), subject to closing adjustments.</div>
+</div>
+<div class="card">
+<div class="card-header medium">Item 7A &nbsp;&middot;&nbsp; Page 332 &nbsp;&middot;&nbsp; Para 88 &nbsp;&middot;&nbsp; Sent 127<span class="kw-pill">net loss</span></div>
+<div class="flagged-medium">As a result of the sale, Citi’s stockholders’ equity increased by approximately $ 1.7  billion due to (i) the reclassification of an approximate $ 2.3  billion CTA loss associated with Banamex from AOCI (within stockholders’equity) to Noncontrolling interests (NCI) , partially offset by (ii) a net loss on sale of approximately $ 0.6  billion recorded primarily in additional paid-in capital within stockholders’equity, which reflects the difference between the sale consideration received and 25 % ...</div>
+<div class="ctx-block">GAAP book value.</div>
+</div>
+<div class="card">
+<div class="card-header medium">Item 7A &nbsp;&middot;&nbsp; Page 332 &nbsp;&middot;&nbsp; Para 324 &nbsp;&middot;&nbsp; Sent 457<span class="kw-pill">default</span></div>
+<div class="flagged-medium">(7)    Includes revenues from corporate debt, secondary trading loans, mortgage securities, single name and index credit default swaps, and structured credit products.</div>
+</div>
+<div class="divider div-green">Low severity findings &nbsp;(84)</div>
+<p class="low-note">Low severity flags are included for completeness. Standard boilerplate language &#8212; no immediate action required.</p>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 106 &nbsp;&middot;&nbsp; Sent 157<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">• Citi continued to advance its transformation, with over 80% of transformation programs now at or nearly at Citi’s target state.</div>
+<div class="flagged-low">Additionally, in December 2025, the OCC terminated its July 2024 amendment to Citibank’s 2020 Consent Order (see “Citi’s Multiyear Transformation” below).</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 151 &nbsp;&middot;&nbsp; Sent 236<span class="kw-pill">consent order</span></div>
+<div class="flagged-low">FRB and OCC Consent Orders Compliance</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 152 &nbsp;&middot;&nbsp; Sent 237<span class="kw-pill">consent order</span></div>
+<div class="flagged-low">Citi’s transformation efforts include implementation of the October 7, 2020 FRB and OCC Consent Orders issued to Citigroup and Citibank, respectively.</div>
+<div class="ctx-block">The 2020 Consent Orders require Citigroup and Citibank to implement extensive targeted action plans and submit quarterly progress reports on a timely and sufficient basis, detailing the results and status of improvements relating principally to vario...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 152 &nbsp;&middot;&nbsp; Sent 238<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">Citi’s transformation efforts include implementation of the October 7, 2020 FRB and OCC Consent Orders issued to Citigroup and Citibank, respectively.</div>
+<div class="flagged-low">The 2020 Consent Orders require Citigroup and Citibank to implement extensive targeted action plans and submit quarterly progress reports on a timely and sufficient basis, detailing the results and status of improvements relating principally to various aspects of:</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 157 &nbsp;&middot;&nbsp; Sent 243<span class="kw-pill">consent order</span></div>
+<div class="flagged-low">Although there are no restrictions on Citi’s ability to serve its clients, the 2020 OCC Consent Order requires Citibank to obtain prior approval of any significant new acquisition, including any portfolio or business acquisition, excluding ordinary course transactions.</div>
+<div class="ctx-block">For additional information about the requirements under the 2020 Consent Orders, see Citi’s October 9, 2020 Form 8-K.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 157 &nbsp;&middot;&nbsp; Sent 244<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">Although there are no restrictions on Citi’s ability to serve its clients, the 2020 OCC Consent Order requires Citibank to obtain prior approval of any significant new acquisition, including any portfolio or business acquisition, excluding ordinary c...</div>
+<div class="flagged-low">For additional information about the requirements under the 2020 Consent Orders, see Citi’s October 9, 2020 Form 8-K.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 158 &nbsp;&middot;&nbsp; Sent 246<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">In 2024 the FRB entered into a Civil Money Penalty Consent Order with Citigroup in the amount of approximately $61 million, having found that Citigroup had ongoing deficiencies related to its data quality management program and inadequate measures fo...</div>
+<div class="flagged-low">The OCC and Citibank also entered into an amendment to the October 7, 2020 OCC Consent Order (the Amendment), which the OCC terminated on December 18, 2025.</div>
+<div class="ctx-block">For additional information on the 2024 Consent Orders and the Amendment, see Citi’s July 10, 2024 Form 8-K.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 158 &nbsp;&middot;&nbsp; Sent 247<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">In 2024 the FRB entered into a Civil Money Penalty Consent Order with Citigroup in the amount of approximately $61 million, having found that Citigroup had ongoing deficiencies related to its data quality management program and inadequate measures fo...</div>
+<div class="flagged-low">For additional information on the 2024 Consent Orders and the Amendment, see Citi’s July 10, 2024 Form 8-K.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 162 &nbsp;&middot;&nbsp; Sent 252<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">Citi has built an organization and infrastructure to manage, guide and support its transformation, which spans all businesses and functions to ensure consistency.</div>
+<div class="flagged-low">Additionally, the Citigroup and Citibank Boards of Directors each formed a Transformation Oversight Committee, an ad hoc committee of each Board, to provide oversight of Citi’s efforts to improve its risk and control environment and management’s remediation efforts under the consent orders.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 20 &nbsp;&middot;&nbsp; Sent 20<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">LIQUIDITY RISK</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 22 &nbsp;&middot;&nbsp; Sent 23<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">Adequate and diverse sources of funding and liquidity are essential to Citi’s businesses.</div>
+<div class="flagged-low">Funding and liquidity risks arise from several factors, many of which are largely outside of Citi’s control, such as disruptions in the financial markets, changes in key funding sources, credit spreads, changes in Citi’s credit ratings and macroeconomic, geopolitical and other conditions.</div>
+<div class="ctx-block">For additional information, see “Risk Factors—Liquidity Risks” above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 22 &nbsp;&middot;&nbsp; Sent 24<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">Adequate and diverse sources of funding and liquidity are essential to Citi’s businesses. Funding and liquidity risks arise from several factors, many of which are largely outside of Citi’s control, such as disruptions in the financial markets, chang...</div>
+<div class="flagged-low">For additional information, see “Risk Factors—Liquidity Risks” above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 27 &nbsp;&middot;&nbsp; Sent 29<span class="kw-pill">resolution plan</span></div>
+<div class="flagged-low">• satisfying regulatory requirements, including, but not limited to, those related to resolution planning (see “Resolution Plan” and “Total Loss-Absorbing Capacity (TLAC)” below).</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 31 &nbsp;&middot;&nbsp; Sent 35<span class="kw-pill">stress test</span></div>
+<div class="ctx-block">At an aggregate Citigroup level, Citi’s goal is to maintain sufficient funding in amount and tenor to fully fund customer assets and to provide an appropriate amount of cash and high-quality liquid assets (as discussed below), even in times of stress...</div>
+<div class="flagged-low">Citi’s liquidity risk management framework provides that, in addition to the aggregate requirements, certain entities be self-sufficient or net providers of liquidity, including in conditions established under their designated stress tests.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 31 &nbsp;&middot;&nbsp; Sent 35<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">At an aggregate Citigroup level, Citi’s goal is to maintain sufficient funding in amount and tenor to fully fund customer assets and to provide an appropriate amount of cash and high-quality liquid assets (as discussed below), even in times of stress...</div>
+<div class="flagged-low">Citi’s liquidity risk management framework provides that, in addition to the aggregate requirements, certain entities be self-sufficient or net providers of liquidity, including in conditions established under their designated stress tests.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 39 &nbsp;&middot;&nbsp; Sent 51<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">As a supplement to Citigroup’s ALCO, Citi’s Funding and Liquidity Risk Committee (FLRC) is focused on funding and liquidity risk matters.</div>
+<div class="ctx-block">The FLRC reviews and discusses the funding and liquidity risk profile of, as well as risk management practices for, Citigroup and Citibank and reports its findings and recommendations to each relevant ALCO as appropriate.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 39 &nbsp;&middot;&nbsp; Sent 52<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">As a supplement to Citigroup’s ALCO, Citi’s Funding and Liquidity Risk Committee (FLRC) is focused on funding and liquidity risk matters.</div>
+<div class="flagged-low">The FLRC reviews and discusses the funding and liquidity risk profile of, as well as risk management practices for, Citigroup and Citibank and reports its findings and recommendations to each relevant ALCO as appropriate.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 41 &nbsp;&middot;&nbsp; Sent 54<span class="kw-pill">stress test</span></div>
+<div class="flagged-low">Stress Testing</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 42 &nbsp;&middot;&nbsp; Sent 55<span class="kw-pill">stress test</span></div>
+<div class="flagged-low">Liquidity stress testing is performed for each of Citi’s major entities, operating subsidiaries and countries.</div>
+<div class="ctx-block">Stress testing and scenario analyses are intended to quantify the potential impact of an adverse liquidity event on the balance sheet and liquidity position, in order to have sufficient liquidity on hand to manage through such an event. These scenari...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 42 &nbsp;&middot;&nbsp; Sent 56<span class="kw-pill">stress test</span></div>
+<div class="ctx-block">Liquidity stress testing is performed for each of Citi’s major entities, operating subsidiaries and countries.</div>
+<div class="flagged-low">Stress testing and scenario analyses are intended to quantify the potential impact of an adverse liquidity event on the balance sheet and liquidity position, in order to have sufficient liquidity on hand to manage through such an event.</div>
+<div class="ctx-block">These scenarios include assumptions about significant changes in key funding sources, market triggers (such as credit ratings), potential uses of funding and macroeconomic, geopolitical and other conditions. These conditions include expected and stre...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 43 &nbsp;&middot;&nbsp; Sent 59<span class="kw-pill">stress test</span></div>
+<div class="flagged-low">Liquidity stress tests are performed to ascertain potential mismatches between liquidity sources and uses over a variety of time horizons and over different stressed conditions.</div>
+<div class="ctx-block">To monitor the liquidity of an entity, these stress tests and potential mismatches are calculated on a daily basis.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 43 &nbsp;&middot;&nbsp; Sent 60<span class="kw-pill">stress test</span></div>
+<div class="ctx-block">Liquidity stress tests are performed to ascertain potential mismatches between liquidity sources and uses over a variety of time horizons and over different stressed conditions.</div>
+<div class="flagged-low">To monitor the liquidity of an entity, these stress tests and potential mismatches are calculated on a daily basis.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 59 &nbsp;&middot;&nbsp; Sent 92<span class="kw-pill">stress test</span></div>
+<div class="flagged-low">Citi monitors its liquidity by reference to the LCR in addition to internal 30-day liquidity stress testing performed for Citi’s major entities, operating subsidiaries and countries.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 165 &nbsp;&middot;&nbsp; Sent 224<span class="kw-pill">resolution plan</span></div>
+<div class="flagged-low">Resolution Plan</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 166 &nbsp;&middot;&nbsp; Sent 227<span class="kw-pill">resolution plan</span></div>
+<div class="ctx-block">Citigroup is required under Title I of the Dodd-Frank Wall Street Reform and Consumer Protection Act of 2010 (Dodd-Frank Act) and the rules promulgated by the FDIC and FRB to periodically submit a plan for Citi’s rapid and orderly resolution under th...</div>
+<div class="flagged-low">For additional information on risks related to the application of resolution plan requirements, see “Risk Factors—Strategic Risks” above.</div>
+<div class="ctx-block">Citigroup alternates between submitting a full resolution plan and a targeted resolution plan on a biennial cycle.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 166 &nbsp;&middot;&nbsp; Sent 228<span class="kw-pill">resolution plan</span></div>
+<div class="ctx-block">Bankruptcy Code in the event of material financial distress or failure. For additional information on risks related to the application of resolution plan requirements, see “Risk Factors—Strategic Risks” above.</div>
+<div class="flagged-low">Citigroup alternates between submitting a full resolution plan and a targeted resolution plan on a biennial cycle.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 167 &nbsp;&middot;&nbsp; Sent 229<span class="kw-pill">resolution plan</span></div>
+<div class="flagged-low">Under Citi’s preferred “single point of entry” resolution plan strategy, only Citigroup, the parent holding company, would enter into bankruptcy, while Citigroup’s material legal entities (as defined in the public section of its 2025 resolution plan, which can be found on the FRB’s and FDIC’s websites) would remain operational outside of any resolution or insolvency proceedings.</div>
+<div class="ctx-block">Citigroup’s resolution plan has been designed to minimize the risk of systemic impact to the U.S. and global financial systems, while maximizing the value of the bankruptcy estate for the benefit of Citigroup’s creditors, including its unsecured LTD ...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 167 &nbsp;&middot;&nbsp; Sent 230<span class="kw-pill">resolution plan</span></div>
+<div class="ctx-block">Under Citi’s preferred “single point of entry” resolution plan strategy, only Citigroup, the parent holding company, would enter into bankruptcy, while Citigroup’s material legal entities (as defined in the public section of its 2025 resolution plan,...</div>
+<div class="flagged-low">Citigroup’s resolution plan has been designed to minimize the risk of systemic impact to the U.S.</div>
+<div class="ctx-block">and global financial systems, while maximizing the value of the bankruptcy estate for the benefit of Citigroup’s creditors, including its unsecured LTD holders.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 167 &nbsp;&middot;&nbsp; Sent 231<span class="kw-pill">bankruptcy</span></div>
+<div class="ctx-block">Under Citi’s preferred “single point of entry” resolution plan strategy, only Citigroup, the parent holding company, would enter into bankruptcy, while Citigroup’s material legal entities (as defined in the public section of its 2025 resolution plan,...</div>
+<div class="flagged-low">and global financial systems, while maximizing the value of the bankruptcy estate for the benefit of Citigroup’s creditors, including its unsecured LTD holders.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 168 &nbsp;&middot;&nbsp; Sent 232<span class="kw-pill">bankruptcy</span></div>
+<div class="flagged-low">In addition, in line with the FRB’s total loss-absorbing capacity (TLAC) rule, Citigroup’s shareholders and unsecured creditors—including its unsecured LTD holders—bear any losses resulting from Citigroup’s bankruptcy.</div>
+<div class="ctx-block">Accordingly, any value realized by holders of its unsecured LTD may not be sufficient to repay the amounts owed to such debt holders in the event of a bankruptcy or other resolution proceeding of Citigroup.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 168 &nbsp;&middot;&nbsp; Sent 233<span class="kw-pill">bankruptcy</span></div>
+<div class="ctx-block">In addition, in line with the FRB’s total loss-absorbing capacity (TLAC) rule, Citigroup’s shareholders and unsecured creditors—including its unsecured LTD holders—bear any losses resulting from Citigroup’s bankruptcy.</div>
+<div class="flagged-low">Accordingly, any value realized by holders of its unsecured LTD may not be sufficient to repay the amounts owed to such debt holders in the event of a bankruptcy or other resolution proceeding of Citigroup.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 172 &nbsp;&middot;&nbsp; Sent 237<span class="kw-pill">bankruptcy</span></div>
+<div class="flagged-low">• Citigroup executed an inter-affiliate agreement with Citicorp, Citigroup’s operating material legal entities and certain other affiliated entities pursuant to which Citicorp is required to provide liquidity and capital support to Citigroup’s operating material legal entities in the event that Citigroup were to enter bankruptcy proceedings (Citi Support Agreement).</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 176 &nbsp;&middot;&nbsp; Sent 241<span class="kw-pill">bankruptcy</span></div>
+<div class="flagged-low">• in the event of a Citigroup bankruptcy, Citigroup will be required to contribute most of its remaining assets to Citicorp.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 179 &nbsp;&middot;&nbsp; Sent 248<span class="kw-pill">bankruptcy</span></div>
+<div class="ctx-block">The intended purpose of the requirements is to facilitate the orderly resolution of U.S. GSIBs under the U.S.</div>
+<div class="flagged-low">Bankruptcy Code and Title II of the Dodd-Frank Act.</div>
+<div class="ctx-block">For additional information, including Citi’s TLAC and LTD amounts and ratios, see “Capital Resources—Current Regulatory Capital Standards” above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 179 &nbsp;&middot;&nbsp; Sent 249<span class="kw-pill">regulatory capital</span></div>
+<div class="ctx-block">GSIBs under the U.S. Bankruptcy Code and Title II of the Dodd-Frank Act.</div>
+<div class="flagged-low">For additional information, including Citi’s TLAC and LTD amounts and ratios, see “Capital Resources—Current Regulatory Capital Standards” above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 186 &nbsp;&middot;&nbsp; Sent 259<span class="kw-pill">stress test</span></div>
+<div class="ctx-block">Secured funding transactions are predominantly collateralized by government debt securities. Generally, changes in the level of Citi’s secured funding are primarily due to fluctuations in secured lending activity in the matched book (as described bel...</div>
+<div class="flagged-low">In order to maintain reliable funding under a wide range of market conditions, Citi manages risks related to its secured funding by establishing secured funding limits and conducting daily stress tests that account for risks related to capacity, tenor, haircut, collateral type, counterparty and client actions.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 205 &nbsp;&middot;&nbsp; Sent 292<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">Changes in counterparty behavior could impact Citi’s funding and liquidity, as well as the results of operations of certain of its businesses. The actual impact to Citigroup or Citibank is unpredictable and may differ materially from the potential fu...</div>
+<div class="flagged-low">For additional information on the impact of credit rating changes on Citi and its applicable subsidiaries, see “Risk Factors—Liquidity Risks” above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 209 &nbsp;&middot;&nbsp; Sent 303<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">For Citigroup, these mitigating factors include, but are not limited to, accessing surplus funding capacity from existing clients, tailoring levels of secured lending and adjusting the size of select trading books and collateralized borrowings at cer...</div>
+<div class="flagged-low">Citi believes these mitigating actions could substantially reduce the funding and liquidity risk, if any, of the potential downgrades described above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 213 &nbsp;&middot;&nbsp; Sent 309<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">In addition to the above-referenced liquidity resources of certain Citibank entities, Citibank could reduce the funding and liquidity risk, if any, of the potential downgrades described above through mitigating actions, including repricing certain commitments to commercial paper conduits.</div>
+<div class="ctx-block">In the event of the potential downgrades described above, Citi believes that certain corporate customers could reduce borrowing through these conduits, which would result in a reduced amount of ABCP issuance.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 237 &nbsp;&middot;&nbsp; Sent 359<span class="kw-pill">regulatory capital</span></div>
+<div class="ctx-block">Citi measures the potential impacts of changes in interest rates on the value of its AOCI , which can in turn impact Citi’s common equity and tangible common equity. This will impact Citi’s CET1 and other regulatory capital ratios.</div>
+<div class="flagged-low">Citi seeks to manage its exposure to changes in the market level of interest rates, while limiting the potential impact on its AOCI and regulatory capital position.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 235 &nbsp;&middot;&nbsp; Sent 442<span class="kw-pill">Sarbanes-Oxley</span></div>
+<div class="flagged-low">Certification of principal executive officer pursuant to Section 302 of the Sarbanes-Oxley Act of 2002.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 237 &nbsp;&middot;&nbsp; Sent 444<span class="kw-pill">Sarbanes-Oxley</span></div>
+<div class="flagged-low">Certification of principal financial officer pursuant to Section 302 of the Sarbanes-Oxley Act of 2002.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 239 &nbsp;&middot;&nbsp; Sent 447<span class="kw-pill">Sarbanes-Oxley</span></div>
+<div class="ctx-block">Certification pursuant to 18 U.S.C.</div>
+<div class="flagged-low">Section 1350, as adopted pursuant to Section 906 of the Sarbanes-Oxley Act of 2002.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 316 &nbsp;&middot;&nbsp; Sent 558<span class="kw-pill">default</span></div>
+<div class="flagged-low">CDS: Credit default swaps</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 392 &nbsp;&middot;&nbsp; Sent 655<span class="kw-pill">default</span></div>
+<div class="flagged-low">LGD: Loss given default</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 409 &nbsp;&middot;&nbsp; Sent 680<span class="kw-pill">default</span></div>
+<div class="ctx-block">Loans for which interest income is not recognized on an accrual basis. Loans (other than credit card loans and certain consumer loans insured by U.S.</div>
+<div class="flagged-low">government-sponsored agencies) are placed on non-accrual status when full payment of principal and interest is not expected, regardless of delinquency status, or when principal and interest have been in default for a period of 90 days or more unless the loan is both well secured and in the process of collection.</div>
+<div class="ctx-block">Collateral-dependent loans are typically maintained on non-accrual status.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 6 &nbsp;&middot;&nbsp; Page 129 &nbsp;&middot;&nbsp; Para 221 &nbsp;&middot;&nbsp; Sent 277<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">For additional information on trends in Services ’ deposits and loans, see “Managing Global Risk—Credit Risk—Loans” and “Managing Global Risk—Liquidity Risk—Deposits” below.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 6 &nbsp;&middot;&nbsp; Page 129 &nbsp;&middot;&nbsp; Para 299 &nbsp;&middot;&nbsp; Sent 373<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">For additional information on trends in Markets ’ deposits and loans, see “Managing Global Risk—Credit Risk—Loans” and “Managing Global Risk—Liquidity Risk—Deposits” below.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 6 &nbsp;&middot;&nbsp; Page 129 &nbsp;&middot;&nbsp; Para 377 &nbsp;&middot;&nbsp; Sent 471<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">For additional information on trends in Banking ’s deposits and loans, see “Managing Global Risk—Credit Risk—Loans” and “Managing Global Risk—Liquidity Risk—Deposits” below.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 7 &nbsp;&middot;&nbsp; Page 522 &nbsp;&middot;&nbsp; Para 30 &nbsp;&middot;&nbsp; Sent 43<span class="kw-pill">default</span></div>
+<div class="flagged-low">Over-the-counter cleared (OTC-cleared) derivatives: Derivative contracts that are negotiated and executed bilaterally, but subsequently settled via a central clearing house, such that each derivative counterparty is only exposed to the default of that clearing house.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 7 &nbsp;&middot;&nbsp; Page 522 &nbsp;&middot;&nbsp; Para 34 &nbsp;&middot;&nbsp; Sent 47<span class="kw-pill">default</span></div>
+<div class="flagged-low">PD: Probability of default</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 31 &nbsp;&middot;&nbsp; Sent 52<span class="kw-pill">default</span></div>
+<div class="ctx-block">for credit losses (ACL) process (see “Significant Accounting Policies and Significant Estimates—Allowance for Credit Losses” below and Notes 1 (“Allowance for Credit Losses (ACL)”) and 16), as well as through regular stress testing at the company, bu...</div>
+<div class="flagged-low">These stress-testing processes typically estimate potential incremental credit costs that would occur as a result of either downgrades in the credit quality or defaults of the obligors or counterparties.</div>
+<div class="ctx-block">See Notes 15 and 16 for additional information on Citi’s credit risk management.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 84 &nbsp;&middot;&nbsp; Sent 110<span class="kw-pill">default</span></div>
+<div class="ctx-block">The maintenance of accurate and consistent risk ratings across the corporate credit portfolio facilitates the comparison of credit exposure across all lines of business, geographies and products.</div>
+<div class="flagged-low">Counterparty risk ratings reflect an estimated probability of default for a counterparty, and internal risk ratings are derived by leveraging validated statistical models and scorecards in combination with consideration of factors specific to the obligor or market, such as management experience, competitive position, regulatory environment and commodity prices.</div>
+<div class="ctx-block">Facility risk ratings are assigned that reflect the probability of default of the obligor and factors that affect the loss given default of the facility, such as parental support or collateral. Internal ratings that generally correspond to BBB and ab...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 84 &nbsp;&middot;&nbsp; Sent 111<span class="kw-pill">default</span></div>
+<div class="ctx-block">The maintenance of accurate and consistent risk ratings across the corporate credit portfolio facilitates the comparison of credit exposure across all lines of business, geographies and products. Counterparty risk ratings reflect an estimated probabi...</div>
+<div class="flagged-low">Facility risk ratings are assigned that reflect the probability of default of the obligor and factors that affect the loss given default of the facility, such as parental support or collateral.</div>
+<div class="ctx-block">Internal ratings that generally correspond to BBB and above are considered investment grade, while those below are considered non-investment grade.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 98 &nbsp;&middot;&nbsp; Sent 130<span class="kw-pill">default</span></div>
+<div class="flagged-low">Obligor risk ratings may be downgraded, reflecting the increase in the probability of default.</div>
+<div class="ctx-block">Downgrades of obligor risk ratings tend to result in a higher provision for credit losses. In addition, appetite per obligor is reduced consistent with the ratings, and downgrades may result in the purchase of additional credit derivatives or other r...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 98 &nbsp;&middot;&nbsp; Sent 133<span class="kw-pill">default</span></div>
+<div class="ctx-block">Downgrades of obligor risk ratings tend to result in a higher provision for credit losses. In addition, appetite per obligor is reduced consistent with the ratings, and downgrades may result in the purchase of additional credit derivatives or other r...</div>
+<div class="flagged-low">Citi will continue to review exposures to ensure that the appropriate probability of default is incorporated into all risk assessments.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 318 &nbsp;&middot;&nbsp; Sent 400<span class="kw-pill">default</span></div>
+<div class="ctx-block">As of December 31, 2025, Wealth provided consumer mortgages, margin lending, credit cards and other lending products to customer segments that range from affluent to ultra-high net worth through the Private Bank, Citigold and Wealth at Work businesse...</div>
+<div class="flagged-low">These customer segments represent a target market that is characterized by historically low default rates and delinquencies and includes loans that are delinquency managed or classifiably managed.</div>
+<div class="ctx-block">The delinquency-managed portfolio consists primarily of mortgages and credit cards.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 67 &nbsp;&middot;&nbsp; Sent 85<span class="kw-pill">goodwill impairment</span></div>
+<div class="flagged-low">• Expenses excluding a goodwill impairment related to Citi’s agreement to sell a 25% equity stake in Grupo Financiero Banamex, S.A.</div>
+<div class="ctx-block">de C.V. (Banamex) (the Banamex-related notable item)</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 112 &nbsp;&middot;&nbsp; Sent 166<span class="kw-pill">goodwill impairment</span></div>
+<div class="flagged-low">• Banamex-related notable item: expenses included a goodwill impairment of $726 million ($714 million after-tax) related to Citi’s agreement to sell a 25% equity stake in Grupo Financiero Banamex, S.A.</div>
+<div class="ctx-block">de C.V. (Banamex)</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 117 &nbsp;&middot;&nbsp; Sent 179<span class="kw-pill">liquidity risk</span></div>
+<div class="ctx-block">Citigroup’s average deposits in 2025 were approximately $1.4 trillion, up 4% versus the prior year, primarily driven by an increase in Services .</div>
+<div class="flagged-low">For additional information about Citi’s average deposits by business, including drivers and deposit trends, see each respective business’s results of operations and “Liquidity Risk—Deposits” below.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 130 &nbsp;&middot;&nbsp; Sent 202<span class="kw-pill">regulatory capital</span></div>
+<div class="ctx-block">The decrease was driven by an increase in Total Leverage Exposure, partially offset by an increase in Tier 1 Capital. For additional information on Citi’s capital ratios and related components, see “Capital Resources” below.</div>
+<div class="flagged-low">For additional information on capital-related risks, trends and uncertainties, see “Capital Resources—Regulatory Capital Standards and Developments” and “Risk Factors—Strategic Risks,” “—Operational Risks” and “—Compliance Risks” below.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 133 &nbsp;&middot;&nbsp; Sent 207<span class="kw-pill">tariff</span></div>
+<div class="ctx-block">Various macroeconomic, geopolitical and regulatory factors have contributed to economic uncertainties in the U.S. and globally, including, but not limited to, those related to various geopolitical challenges, tensions and conflicts; changes in U.S.</div>
+<div class="flagged-low">laws or policies, including those related to trade and tariffs; and lower interest rates.</div>
+<div class="ctx-block">These factors could adversely affect economic growth, unemployment and inflation in the U.S. and other countries and result in volatility and disruptions in financial markets.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 1A &nbsp;&middot;&nbsp; Page 118 &nbsp;&middot;&nbsp; Para 165 &nbsp;&middot;&nbsp; Sent 261<span class="kw-pill">regulatory capital</span></div>
+<div class="ctx-block">The transaction resulted in Citi’s full exit from its operations in Russia and included all remaining businesses, as well as approximately 800 employees. The divestiture of the remaining business operations is expected to provide an estimated benefit...</div>
+<div class="flagged-low">While a benefit in the first quarter of 2026, the cumulative impact of the $1.6 billion CTA loss is regulatory capital neutral to Citi.</div>
+<div class="ctx-block">For additional information, see “Managing Global Risk—Other Risks—Country Risk—Russia” below and Note 2.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 1 &nbsp;&middot;&nbsp; Sent 1<span class="kw-pill">legal proceedings</span></div>
+<div class="flagged-low">legal proceedings when Citi has taken possession of the collateral:</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 167 &nbsp;&middot;&nbsp; Sent 229<span class="kw-pill">insolvency</span></div>
+<div class="flagged-low">Under Citi’s preferred “single point of entry” resolution plan strategy, only Citigroup, the parent holding company, would enter into bankruptcy, while Citigroup’s material legal entities (as defined in the public section of its 2025 resolution plan, which can be found on the FRB’s and FDIC’s websites) would remain operational outside of any resolution or insolvency proceedings.</div>
+<div class="ctx-block">Citigroup’s resolution plan has been designed to minimize the risk of systemic impact to the U.S. and global financial systems, while maximizing the value of the bankruptcy estate for the benefit of Citigroup’s creditors, including its unsecured LTD ...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 205 &nbsp;&middot;&nbsp; Sent 291<span class="kw-pill">unpredictable</span></div>
+<div class="ctx-block">For example, certain corporate customers and markets counterparties could re-evaluate their business relationships with Citi and limit transactions in certain contracts or market instruments with Citi. Changes in counterparty behavior could impact Ci...</div>
+<div class="flagged-low">The actual impact to Citigroup or Citibank is unpredictable and may differ materially from the potential funding and liquidity impacts described below.</div>
+<div class="ctx-block">For additional information on the impact of credit rating changes on Citi and its applicable subsidiaries, see “Risk Factors—Liquidity Risks” above.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 224 &nbsp;&middot;&nbsp; Sent 330<span class="kw-pill">off-balance sheet</span></div>
+<div class="flagged-low">• differences in timing and amounts of the maturity or repricing of assets, liabilities and off-balance sheet instruments;</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 3 &nbsp;&middot;&nbsp; Page 232 &nbsp;&middot;&nbsp; Para 233 &nbsp;&middot;&nbsp; Sent 352<span class="kw-pill">interest rate sensitivity</span></div>
+<div class="ctx-block">In addition to IRE, Citi analyzes economic value sensitivity (EVS) as a longer-term interest rate risk metric. EVS is a net present value (NPV)–based measure of the lifetime cash flows of Citi’s Banking Book.</div>
+<div class="flagged-low">It estimates the interest rate sensitivity of the Banking Book’s economic value</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 71 &nbsp;&middot;&nbsp; Sent 164<span class="kw-pill">audit committee</span></div>
+<div class="ctx-block">The Code of Ethics for Financial Professionals applies to Citi’s principal executive officer, principal financial officer and principal accounting officer. Amendments and waivers, if any, to the Code of Ethics for Financial Professionals will be disc...</div>
+<div class="flagged-low">The Audit Committee has responsibility for the oversight of Citi’s Code of Ethics for Financial Professionals.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 72 &nbsp;&middot;&nbsp; Sent 165<span class="kw-pill">audit committee</span></div>
+<div class="flagged-low">Both the Code of Conduct and the Code of Ethics for Financial Professionals can be found on the Citi website by clicking on “Investors” and then “Corporate Governance.” Citi’s Corporate Governance Guidelines can also be found there, as well as the charters for the Audit Committee, the Compensation, Performance Management and Culture Committee, the Nomination, Governance and Public Affairs Committee, the Risk Management Committee and the Technology Committee of Citigroup’s Board of Directors.</div>
+<div class="ctx-block">These materials are also available by writing to Citigroup Inc., Corporate Governance, 388 Greenwich Street, 17th Floor, New York, New York 10013.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 241 &nbsp;&middot;&nbsp; Sent 450<span class="kw-pill">clawback</span></div>
+<div class="ctx-block">Citigroup Inc.</div>
+<div class="flagged-low">Dodd-Frank Clawback Provisions (effective as of October 2, 2023).</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 320 &nbsp;&middot;&nbsp; Sent 564<span class="kw-pill">regulatory capital</span></div>
+<div class="ctx-block">CET1 Capital ratio*: Common Equity Tier 1 Capital ratio.</div>
+<div class="flagged-low">A primary regulatory capital ratio representing end-of-period CET1 Capital divided by total risk-weighted assets.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 335 &nbsp;&middot;&nbsp; Sent 582<span class="kw-pill">consent order</span></div>
+<div class="flagged-low">Consent Orders: In October 2020, Citigroup and Citibank entered into consent orders with the FRB and OCC that require Citigroup and Citibank to make improvements in various aspects of enterprise-wide risk management, compliance, data quality management related to governance, and internal controls.</div>
+<div class="ctx-block">In July 2024, the FRB and OCC entered into civil money penalty consent orders with Citigroup and Citibank to address remediation effort shortcomings.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 4 &nbsp;&middot;&nbsp; Page 507 &nbsp;&middot;&nbsp; Para 335 &nbsp;&middot;&nbsp; Sent 583<span class="kw-pill">consent order</span></div>
+<div class="ctx-block">Consent Orders: In October 2020, Citigroup and Citibank entered into consent orders with the FRB and OCC that require Citigroup and Citibank to make improvements in various aspects of enterprise-wide risk management, compliance, data quality manageme...</div>
+<div class="flagged-low">In July 2024, the FRB and OCC entered into civil money penalty consent orders with Citigroup and Citibank to address remediation effort shortcomings.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 6 &nbsp;&middot;&nbsp; Page 129 &nbsp;&middot;&nbsp; Para 457 &nbsp;&middot;&nbsp; Sent 567<span class="kw-pill">write-down</span></div>
+<div class="ctx-block">Provisions were $140 million, reflecting net credit losses of $170 million, and a net ACL release of $30 million.</div>
+<div class="flagged-low">Net credit losses were primarily driven by international credit cards and write-downs of certain mortgage loans to their collateral value due to the impact of the California wildfires.</div>
+<div class="ctx-block">Provisions were a benefit of $126 million in the prior year, reflecting a net ACL release of $247 million, driven by a refinement of loss assumptions in the margin lending portfolio and changes in the macroeconomic outlook, and net credit losses of $...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 7 &nbsp;&middot;&nbsp; Page 522 &nbsp;&middot;&nbsp; Para 59 &nbsp;&middot;&nbsp; Sent 85<span class="kw-pill">regulatory capital</span></div>
+<div class="flagged-low">Standardized Approach: Established through Basel III, the Standardized Approach aligns regulatory capital requirements more closely with the key elements of banking risk by introducing a wider differentiation of risk weights and a wider recognition of credit risk mitigation techniques, while avoiding excessive complexity.</div>
+<div class="ctx-block">Accordingly, the Standardized Approach produces capital ratios more in line with the actual economic risks that banks face.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 7A &nbsp;&middot;&nbsp; Page 332 &nbsp;&middot;&nbsp; Para 122 &nbsp;&middot;&nbsp; Sent 182<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">The funds transfer-pricing framework (FTP) allocates the costs and benefits associated with these risks, as well as contingent liquidity risk, from Treasury to the operating business segments.</div>
+<div class="ctx-block">FTP costs and benefits are allocated based on methodologies that are set by the Citigroup Asset and Liability Committee (ALCO). The methodologies are reviewed and updated as appropriate to ensure they align with Citi’s balance sheet strategy and over...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 7 &nbsp;&middot;&nbsp; Sent 12<span class="kw-pill">consent order</span></div>
+<div class="flagged-low">• Transformation Oversight Committee provides oversight of the actions of Citi’s management to develop and execute a transformation of Citi’s risk and control environment pursuant to the FRB and OCC Consent Orders (see “Citi’s Multiyear Transformation—FRB and OCC Consent Orders Compliance” above).</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 9 &nbsp;&middot;&nbsp; Sent 15<span class="kw-pill">liquidity risk</span></div>
+<div class="flagged-low">• Citigroup Asset and Liability Committee (ALCO) oversees liquidity risk and market risk on the accrual book, and monitors and influences the balance sheet, investment securities and capital management activities of Citigroup.</div>
+<div class="ctx-block">Its responsibilities include approving relevant policies and</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 28 &nbsp;&middot;&nbsp; Sent 45<span class="kw-pill">off-balance sheet</span></div>
+<div class="flagged-low">Credit exposures are generally reported in notional terms for accrual loans, reflecting the value at which the loans as well as other off-balance sheet commitments are carried on the Consolidated Balance Sheet.</div>
+<div class="ctx-block">Credit exposure arising from capital markets activities is generally expressed as the current mark-to-market, net of margin, reflecting the net value owed to Citi by a given counterparty.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 31 &nbsp;&middot;&nbsp; Sent 51<span class="kw-pill">stress test</span></div>
+<div class="flagged-low">for credit losses (ACL) process (see “Significant Accounting Policies and Significant Estimates—Allowance for Credit Losses” below and Notes 1 (“Allowance for Credit Losses (ACL)”) and 16), as well as through regular stress testing at the company, business, geography and product levels.</div>
+<div class="ctx-block">These stress-testing processes typically estimate potential incremental credit costs that would occur as a result of either downgrades in the credit quality or defaults of the obligors or counterparties. See Notes 15 and 16 for additional information...</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 65 &nbsp;&middot;&nbsp; Sent 89<span class="kw-pill">off-balance sheet</span></div>
+<div class="flagged-low">(off-balance sheet) (3)(4) 141   311   28   480   147  307  27  481  131  274  24  429</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 320 &nbsp;&middot;&nbsp; Sent 405<span class="kw-pill">write-down</span></div>
+<div class="flagged-low">As presented in the chart above, the fourth quarter of 2025 net credit loss rate in Wealth decreased quarter-over-quarter, primarily driven by write-downs of mortgage loans to their collateral value due to the impact of the California wildfires in the previous quarter, and was broadly stable year-over-year.</div>
+</div>
+<div class="card">
+<div class="card-header low">Item 11 &nbsp;&middot;&nbsp; Page 205 &nbsp;&middot;&nbsp; Para 388 &nbsp;&middot;&nbsp; Sent 488<span class="kw-pill">write-off</span></div>
+<div class="flagged-low">(4) These loans are evaluated for non-accrual status and write-off primarily based on their internal risk classification and not solely on their delinquency status, and, therefore, delinquency metrics are excluded from this table.</div>
+<div class="ctx-block">As of December 31, 2025, 2024 and 2023, 69%, 72% and 85% of Wealth classifiably managed loans were rated investment grade. For additional information on the credit quality of the Wealth portfolio, including classifiably managed portfolios, see “Consu...</div>
+</div>
+</div>
+<div class="page">
+  <div class="section-title">New risk keywords &#8212; absent in prior year filing</div>
+  <p class="section-subtitle">New keyword appearances often signal emerging risks or changing disclosures.</p>
+<div class="kw-card"><div><span class="kw-card-name">Sarbanes-Oxley</span><span class="sev-score">score 60</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">audit committee</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">bankruptcy</span><span class="sev-score">score 60</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">clawback</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">consent order</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">default</span><span class="sev-score">score 60</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">goodwill impairment</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">insolvency</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">interest rate sensitivity</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">legal proceedings</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">liquidity risk</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">net loss</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">off-balance sheet</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">regulatory approval</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">regulatory capital</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">resolution plan</span><span class="sev-score">score 60</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">stress test</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">tariff</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">unpredictable</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">write-down</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="kw-card"><div><span class="kw-card-name">write-off</span><span class="sev-score">score 50</span><span style="color:#EF9F27;font-size:9pt;">&#9679; elevated</span></div><div class="kw-desc">First appearance in this filing &#8212; absent from prior year &#8212; signals a new or escalating risk disclosure area worth monitoring.</div></div>
+<div class="dot-legend"><span class="dot-high">&#9679;</span> high severity (score 70+) &nbsp;&nbsp;<span class="dot-mid">&#9679;</span> elevated (40&#8211;69) &nbsp;&nbsp;<span class="dot-low">&#9679;</span> lower (&lt;40)</div>
+</div>
+<div class="page">
+  <div class="dash-title">Key findings &#8212; C C 2026</div>
+<table class="stat-grid"><tr><td><div class="stat-num">94</div><div class="stat-label">Total flags</div></td><td><div class="stat-num red">2</div><div class="stat-label">High severity</div></td><td><div class="stat-num amber">8</div><div class="stat-label">Medium severity</div></td><td><div class="stat-num green">84</div><div class="stat-label">Low severity</div></td><td><div class="stat-num">21</div><div class="stat-label">New keywords</div></td><td><div class="stat-num">0.033</div><div class="stat-label">Avg sentiment</div></td></tr></table>
+  <hr class="dash-rule">
+  <div class="divider div-navy" style="margin-bottom:12px;">Three things to raise in this meeting</div>
+<div class="three-raise-item"><span class="raise-num">1.</span> <span class="raise-text">Financial risk increased by 47 flags year-over-year</span>
+<br><span class="raise-tag">See risk heat map</span></div>
+<div class="three-raise-item"><span class="raise-num">2.</span> <span class="raise-text">"consent order" flagged in Item 1A (severity score 80)</span>
+<br><span class="raise-tag">Page 118, Para 158</span></div>
+<div class="three-raise-item"><span class="raise-num">3.</span> <span class="raise-text">New keyword "Sarbanes-Oxley" (score 60) — absent in prior filing</span>
+<br><span class="raise-tag">Absent in prior filing</span></div>
+  <div class="page-footer">Not financial advice &nbsp;&middot;&nbsp; For due diligence purposes only &nbsp;&middot;&nbsp; RedFlag &nbsp;&middot;&nbsp; github.com/zshqv/RedFlag</div>
+</div>
+<div class="page">
+  <div class="section-title">Source &amp; reproducibility</div>
+  <table class="source-table">
+    <tr><td class="lbl">Source type</td><td class="val">Unknown</td></tr>
+    <tr><td class="lbl">Filing date</td><td class="val">2026-02-20</td></tr>
+    <tr><td class="lbl">Prior filing date</td><td class="val">N/A</td></tr>
+    <tr><td class="lbl">Analyzed on</td><td class="val">2026-06-23</td></tr>
+    <tr><td class="lbl">Sections scanned</td><td class="val">Item 11, Item 1A, Item 3, Item 4, Item 6, Item 7, Item 7A</td></tr>
+    <tr><td class="lbl">Keyword library version</td><td class="val">v2.0 &#8212; 220+ keywords, 6 categories</td></tr>
+    <tr><td class="lbl">Explanation engine</td><td class="val">Claude API (claude-haiku-4-5-20251001) + rule-based fallback</td></tr>
+    <tr><td class="lbl">GitHub</td><td class="val">github.com/zshqv/RedFlag</td></tr>
+  </table>
+  <div class="full-disclaimer"><strong>DISCLAIMER:</strong> This report is not financial advice and must not be relied upon as the sole basis for investment decisions. RedFlag is a due diligence co-pilot that highlights linguistic risk anomalies in financial filings. All findings are keyword-based and must be validated by qualified human analysts familiar with the company and its industry context. Severity scoring is rule-based and does not constitute a professional risk assessment. Not financial advice. For due diligence purposes only.</div>
+</div>
+</body>
+</html>
